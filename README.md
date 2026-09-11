@@ -13,8 +13,13 @@ on this repo (`wayfinder:grilling` / `:research` / `:prototype`) and lands as an
 [architecture decision record](docs/decisions/) with the evidence attached. The map is
 [#1](https://github.com/Sehaan-1/switchback/issues/1).
 
-Decided so far: [engine core is Go; Python is a cold-path language](docs/decisions/0001-engine-language-go.md)
-([#2](https://github.com/Sehaan-1/switchback/issues/2)).
+Decided so far:
+
+- [Engine core is Go; Python is a cold-path language](docs/decisions/0001-engine-language-go.md)
+  ([#2](https://github.com/Sehaan-1/switchback/issues/2))
+- [Reward function: two-part objective, end-to-end Bernoulli label, priced ambiguity]
+  (docs/decisions/0002-reward-function.md)
+  ([#4](https://github.com/Sehaan-1/switchback/issues/4))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket

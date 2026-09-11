@@ -32,7 +32,8 @@ House rules:
 
 - **No fabricated benchmarks.** If the environment cannot run it, the file says so and states
   the claim as a bound or a model. Order-of-magnitude reasoning is welcome and marked;
-  invented precision is not.
+  invented precision is not. Synthetic-scenario magnitudes are labelled as properties of the
+  scenario, never as expected production impact.
 - **Counter-evidence is part of the record.** If research contradicts the framing of the
   ticket, the ADR says the framing was wrong (see ADR-0001 §3 on Rust prior art in payment
   routing) rather than quietly dropping the citation.
@@ -44,3 +45,4 @@ House rules:
 | # | ADR | Resolves | Status |
 | --- | --- | --- | --- |
 | [0001](0001-engine-language-go.md) | Lock Go for the routing engine core; Python is a cold-path language | [#2](https://github.com/Sehaan-1/switchback/issues/2) | Accepted |
+| [0002](0002-reward-function.md) | Two-part reward: end-to-end Bernoulli label, priced ambiguity, no 3DS multiplier | [#4](https://github.com/Sehaan-1/switchback/issues/4) | Accepted |
