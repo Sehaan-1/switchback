@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+
+# engine build artifacts (implementation phase)
+/bin/
+*.test
+coverage.out
+
+# local state from running the engine / harness
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+/data/
+.env
