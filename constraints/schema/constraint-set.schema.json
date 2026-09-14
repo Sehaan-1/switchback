@@ -1,0 +1,1511 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://switchback.dev/schemas/constraint-set/1.0.0.json",
+  "title": "Switchback ConstraintSet",
+  "description": "Canonical merchant-facing constraint document (ADR-0004). A ConstraintSet is DATA, not code: every rule is a named predicate from a closed catalog with typed parameters, evaluated by a fixed engine evaluator. No expressions, no scripts, no interpolation, no clock reads, no randomness, no I/O, and no reference to learned state (posteriors) may be expressed in this document. Precedence between families is declared, not inferred. See constraints/README.md for the rule catalog, the counting-key rubric, and the compile-time checks (check.py) that JSON Schema cannot express. Rule grammars live in $defs/rule-* so that a full ConstraintSet and an inline single-transaction constraint validate against exactly the same definition.",
+  "type": "object",
+  "required": ["schema_version", "id", "revision", "scope", "precedence", "fail_mode", "audit"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "description": "Version of THIS schema the document conforms to. Rule-name and parameter semantics are versioned with it; unknown rule names are a compile error, never ignored."
+    },
+    "id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Monotone per id. The audit trail references (id, revision, content hash); a decision made under revision 7 must stay explainable after revision 8 ships."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 280
+    },
+    "valid_from": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "valid_until": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "precedence": {
+      "$ref": "#/$defs/precedence"
+    },
+    "fail_mode": {
+      "$ref": "#/$defs/failMode"
+    },
+    "policy": {
+      "$ref": "#/$defs/policy"
+    },
+    "regulatory": {
+      "$ref": "#/$defs/familyRegulatory"
+    },
+    "network": {
+      "$ref": "#/$defs/familyNetwork"
+    },
+    "budget": {
+      "$ref": "#/$defs/familyBudget"
+    },
+    "mandate": {
+      "$ref": "#/$defs/familyMandate"
+    },
+    "econ": {
+      "$ref": "#/$defs/familyEcon"
+    },
+    "preference": {
+      "$ref": "#/$defs/familyPreference"
+    },
+    "constraints": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/inlineConstraint"
+      },
+      "description": "Refinements carried by a single request: 'pin this attempt to processor X', a TTL-bounded exclusion. Request scope may only NARROW the ConstraintSet (compile check SV10). It is deliberately not a bypass channel: a regulated route cannot be pinned into legality by a caller."
+    },
+    "audit": {
+      "$ref": "#/$defs/audit"
+    },
+    "x_extensions": {
+      "type": "object",
+      "description": "Vendor/platform extension point. Keys must be prefixed 'x_'. Extensions are carried into the audit record verbatim and are NEVER consulted by the evaluator: an extension that needs to change routing must become a catalog rule with a schema minor version."
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
+    },
+    "tag": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$",
+      "description": "Stable human-assigned rule id. Referenced verbatim by the audit trail's reason codes."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?(Z|[+-][0-9]{2}:[0-9]{2}))?$"
+    },
+    "duration": {
+      "type": "string",
+      "maxLength": 16,
+      "pattern": "^P(?=[0-9T])([0-9]+Y)?([0-9]+M)?([0-9]+W)?([0-9]+D)?(T(?=[0-9])([0-9]+H)?([0-9]+M)?([0-9]+S)?)?$",
+      "description": "ISO-8601 duration. Windows must divide into 'slots' whole buckets (compile check SV5)."
+    },
+    "moneyMinor": {
+      "type": "integer",
+      "description": "Minor units of the transaction currency (cents). Never a float: money comparisons here gate real authorizations."
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 12,
+      "maxLength": 280,
+      "description": "Required on every rule. A constraint with no stated reason cannot be reviewed, and 'why is this here' is the first question a reader asks six months later."
+    },
+    "authority": {
+      "type": "object",
+      "required": ["basis"],
+      "additionalProperties": false,
+      "properties": {
+        "basis": {
+          "enum": ["law", "scheme_rule", "scheme_guidance", "contract", "policy"],
+          "description": "Why this rule exists and what may override it. 'law' and 'scheme_rule' outrank every merchant preference; 'scheme_guidance' and 'policy' are priced into the tradeoff and may be relaxed with a signed, expiring relaxation."
+        },
+        "citation": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "effective_from": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 280
+        }
+      }
+    },
+    "relaxable": {
+      "type": "object",
+      "description": "Permission to break THIS rule when the constraint set is otherwise infeasible. Deliberately unavailable on regulatory and network rules (familyRegulatory/familyNetwork do not expose it): a law or a scheme rule cannot be relaxed in a config file. A relaxation is a config change with a named approver, an expiry and a scope - never a per-transaction judgement call.",
+      "required": ["approved_by", "approved_at", "expires_at", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "approved_by": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "approved_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "expires_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 280
+        },
+        "scope": {
+          "enum": ["single_transaction", "traffic_share", "unbounded"]
+        },
+        "max_traffic_share_bps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      }
+    },
+    "contextField": {
+      "enum": [
+        "bin_class",
+        "bin_country",
+        "bin_prefix",
+        "card_country",
+        "card_region",
+        "issuer_country",
+        "network",
+        "product",
+        "currency",
+        "amount_minor",
+        "amount_band",
+        "merchant_country",
+        "merchant_id",
+        "route_class",
+        "mandate",
+        "sca_required",
+        "sca_exemption",
+        "entry_mode",
+        "channel",
+        "deadline_ms",
+        "processor",
+        "acquirer_country",
+        "acquirer_region",
+        "acquirer_capability"
+      ],
+      "description": "Closed vocabulary. A field that is not listed here is a schema error, not a silently-false predicate. Request fields (first block) and route fields (processor..acquirer_capability) are the only things a filter may read."
+    },
+    "outcomeField": {
+      "enum": [
+        "decline_category",
+        "merchant_advice_code",
+        "response_code",
+        "attempt_index",
+        "chain_depth",
+        "last_attempt_processor",
+        "elapsed_since_decision_ms"
+      ],
+      "description": "Fields available only after an attempt has returned. Only network and budget rules may read them - and only through 'after'."
+    },
+    "predicate": {
+      "type": "object",
+      "description": "Closed, total, side-effect-free predicate over the request/route context. Every rule is a pure function of (document, context, counter snapshot): no clock, no random, no I/O, no learned state. This is what makes a decision replayable.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["all"],
+          "additionalProperties": false,
+          "properties": {
+            "all": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "$ref": "#/$defs/predicate"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["any"],
+          "additionalProperties": false,
+          "properties": {
+            "any": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "$ref": "#/$defs/predicate"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["not"],
+          "additionalProperties": false,
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/predicate"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["field", "op"],
+          "additionalProperties": false,
+          "properties": {
+            "field": {
+              "$ref": "#/$defs/contextField"
+            },
+            "op": {
+              "enum": ["eq", "ne", "in", "not_in", "lt", "lte", "gt", "gte", "prefix", "exists"]
+            },
+            "value": {
+              "description": "Scalar for eq/ne/lt/lte/gt/gte/prefix, array for in/not_in, omitted for exists. Type must match the field (compile check SV3); a mismatch is rejected at authoring time rather than evaluating to false at 3am."
+            }
+          }
+        }
+      ]
+    },
+    "outcomePredicate": {
+      "type": "object",
+      "description": "Same closed predicate language, over outcome fields. Used by network and budget rules to decide whether the NEXT attempt in a chain is allowed.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["all"],
+          "additionalProperties": false,
+          "properties": {
+            "all": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "$ref": "#/$defs/outcomePredicate"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["any"],
+          "additionalProperties": false,
+          "properties": {
+            "any": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "$ref": "#/$defs/outcomePredicate"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["not"],
+          "additionalProperties": false,
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/outcomePredicate"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["field", "op"],
+          "additionalProperties": false,
+          "properties": {
+            "field": {
+              "$ref": "#/$defs/outcomeField"
+            },
+            "op": {
+              "enum": ["eq", "ne", "in", "not_in", "lt", "lte", "gt", "gte", "exists"]
+            },
+            "value": {}
+          }
+        }
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": ["platform", "merchant", "merchant_route_class", "program"]
+        },
+        "merchant_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "route_class": {
+          "enum": ["card_ecom", "card_moto", "card_pos", "recurring_mit", "payout", "all"]
+        },
+        "program_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "layer_priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "description": "Composition order. Higher priority composes later and may only RESTRICT (monotone composition, compile check SV11) unless an explicitly permissioned override says otherwise."
+        }
+      }
+    },
+    "precedence": {
+      "type": "object",
+      "description": "Explicit and testable ordering. The prefix is fixed by the platform (law > scheme rules); the middle is the merchant's own tradeoff between their caps, their economics and their mandates; 'preference' is always last. Precedence governs which rule is RELAXED first when the set is infeasible - it never changes the eligible set itself, and permuting it must not change the eligible set (property test PV1).",
+      "required": ["fixed_prefix", "order"],
+      "additionalProperties": false,
+      "properties": {
+        "fixed_prefix": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["regulatory", "network"]
+          },
+          "description": "Always ['regulatory','network']. Declared rather than implicit so the audit record can echo it back."
+        },
+        "order": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["budget", "econ", "mandate"]
+          }
+        },
+        "tie_break": {
+          "enum": ["deny_all", "strictest_first"],
+          "description": "When two rules inside the same tier disagree, there is no merchant intent to consult, so the answer is 'the strictest', i.e. the intersection. Capability constraints intersect unconditionally before any tier is consulted."
+        }
+      }
+    },
+    "failMode": {
+      "type": "object",
+      "description": "What happens when the layer cannot produce a legal route. 'fail_closed' is the default everywhere because the alternative - routing anyway - is a payment that should not exist. An unroutable decision is NOT a decline and never updates a posterior (ADR-0002 R10).",
+      "required": ["empty_eligible_set", "guard_trip", "missing_capability", "unknown_decline_category", "counter_unavailable"],
+      "additionalProperties": false,
+      "properties": {
+        "empty_eligible_set": {
+          "enum": ["fail_closed", "escalate"],
+          "description": "'escalate' parks the transaction for a human/backlog decision instead of returning a decline; both are logged with the minimal conflict set."
+        },
+        "guard_trip": {
+          "enum": ["deny_and_alert", "deny", "alert"],
+          "description": "A guard is the post-sampling re-assertion of the same filter. A trip means the compiled plan and the live state disagreed - a bug or a race - so it is denied and alerted, never silently re-rolled."
+        },
+        "missing_capability": {
+          "const": "exclude",
+          "description": "Capability filtering (currency support, 3DS support, market coverage) is unconditional and not configurable: capability is a fact about a processor, not merchant policy."
+        },
+        "unknown_decline_category": {
+          "enum": ["deny_reattempt", "allow_with_limit"],
+          "description": "Visa's default when no decline category is present is not to retry. Encoding the default matters more than encoding the common case."
+        },
+        "counter_unavailable": {
+          "enum": ["deny", "allow_with_alert"],
+          "description": "Only reachable on cold start / partial restore, because counters live in-process (ADR-0001 R1 forbids a store read inside Decide()). 'deny' is the default; the startup gate exists so it is never hit in steady state."
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "description": "The versioned, platform-owned catalogs this document compiles against. Hashed into every audit record, so a decision made under catalog v41 with a typo'd processor id is distinguishable from one made under v42.",
+      "required": ["catalog_version", "processor_ids", "acquirer_regions"],
+      "additionalProperties": false,
+      "properties": {
+        "catalog_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "catalog_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "processor_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "acquirer_regions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 16
+          }
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "required": ["explain", "log_pass_trace", "hash_algorithm", "chain", "retention_days"],
+      "additionalProperties": false,
+      "properties": {
+        "explain": {
+          "type": "boolean"
+        },
+        "log_pass_trace": {
+          "type": "boolean",
+          "description": "Log the verdict of every rule for every candidate, not only the denials. An audit that shows only the refusals cannot prove the routes that WERE allowed were allowed for the right reason."
+        },
+        "hash_algorithm": {
+          "enum": ["sha256", "sha512"]
+        },
+        "chain": {
+          "type": "boolean",
+          "description": "Hash-chain each audit record to its predecessor (prev_hash), making retroactive edits detectable."
+        },
+        "retention_days": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 2555
+        }
+      }
+    },
+
+    "familyRegulatory": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/rule-regulatory-data-residency"
+          },
+          {
+            "$ref": "#/$defs/rule-regulatory-sca-required"
+          }
+        ]
+      }
+    },
+    "familyNetwork": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/rule-network-reattempt-limit"
+          },
+          {
+            "$ref": "#/$defs/rule-network-hard-stop"
+          },
+          {
+            "$ref": "#/$defs/rule-network-retry-schedule"
+          }
+        ]
+      }
+    },
+    "familyBudget": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/rule-budget-attempt-cap"
+          },
+          {
+            "$ref": "#/$defs/rule-budget-chain-depth"
+          },
+          {
+            "$ref": "#/$defs/rule-budget-reservation"
+          }
+        ]
+      }
+    },
+    "familyMandate": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/rule-mandate-require-3ds"
+          },
+          {
+            "$ref": "#/$defs/rule-mandate-must-process"
+          },
+          {
+            "$ref": "#/$defs/rule-mandate-exclude-processor"
+          },
+          {
+            "$ref": "#/$defs/rule-mandate-domestic-acquirer"
+          }
+        ]
+      }
+    },
+    "familyEcon": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/rule-econ-floor-margin"
+          },
+          {
+            "$ref": "#/$defs/rule-econ-max-cost"
+          }
+        ]
+      }
+    },
+    "familyPreference": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/rule-preference-rank"
+      }
+    },
+
+    "inlineConstraint": {
+      "type": "object",
+      "description": "A single-transaction refinement: pin this attempt to processor X, exclude Y for the next 10 minutes. Structurally validated here; the (rule, params) pair is checked against the SAME catalog grammar the persistent families use by check.py (SV10), because JSON Schema's additionalProperties cannot be reused across an allOf cleanly. That split is deliberate and is the reason the constraint layer ships a compiler rather than only a schema.",
+      "required": ["id", "rule", "rationale", "params", "issued_at", "issued_by", "ttl", "request_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "type": "string",
+          "pattern": "^(regulatory|network|budget|mandate|econ|preference)\\.[a-z0-9_]+$"
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "after": {
+          "$ref": "#/$defs/outcomePredicate"
+        },
+        "params": {
+          "type": "object"
+        },
+        "ttl": {
+          "$ref": "#/$defs/duration",
+          "description": "Required, and bounded by the compiler (currently PT1H). A request-scoped refinement that outlives its request is a policy change that nobody reviewed."
+        },
+        "issued_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "issued_by": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "request_ref": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 64
+        }
+      }
+    },
+
+    "rule-regulatory-data-residency": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "authority", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "regulatory.data_residency"
+        },
+        "enforcement": {
+          "const": "candidate",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["acquirer_regions"],
+          "additionalProperties": false,
+          "properties": {
+            "acquirer_regions": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 16
+              },
+              "description": "Acquirer region codes the route must belong to (e.g. ['EEA']). Evaluated against the processor capability catalog, which is versioned separately and hashed into the audit record."
+            },
+            "require_declared_capability": {
+              "type": "boolean",
+              "description": "A processor whose acquirer region is UNKNOWN is excluded rather than assumed compliant."
+            },
+            "on_missing_capability": {
+              "enum": ["exclude", "deny_all"]
+            }
+          }
+        }
+      }
+    },
+
+    "rule-regulatory-sca-required": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "authority", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "regulatory.sca_required"
+        },
+        "enforcement": {
+          "const": "candidate",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["mode"],
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "enum": ["always", "unless_exempt_evidence", "unless_request_declares_not_required"],
+              "description": "'always' means the route must carry a 3DS-capable flow regardless of exemption evidence. The exemptions that avoid the challenge are #11's analysis; this rule decides eligibility."
+            },
+            "allowed_exemptions": {
+              "type": "array",
+              "maxItems": 12,
+              "uniqueItems": true,
+              "items": {
+                "enum": ["low_value", "tra", "recurring_mit", "secure_corporate", "trusted_beneficiary", "delegated", "mit_unscheduled"]
+              }
+            },
+            "on_missing_evidence": {
+              "enum": ["deny", "flag"]
+            }
+          }
+        }
+      }
+    },
+
+    "rule-network-reattempt-limit": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "authority", "params", "after"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "network.reattempt_limit"
+        },
+        "enforcement": {
+          "const": "transaction",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "after": {
+          "$ref": "#/$defs/outcomePredicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["window", "limit", "key", "counter"],
+          "additionalProperties": false,
+          "properties": {
+            "window": {
+              "$ref": "#/$defs/duration"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "key": {
+              "enum": ["card", "card_transaction", "card_merchant", "bin"],
+              "description": "Counting key. 'card' is the conservative reading: it never under-counts a rule the scheme documents per transaction (see constraints/README.md, 'counting keys')."
+            },
+            "applies_to_categories": {
+              "type": "array",
+              "maxItems": 8,
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4
+              }
+            },
+            "missing_category": {
+              "enum": ["deny", "allow"]
+            },
+            "max_per_day": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 64
+            },
+            "min_interval": {
+              "$ref": "#/$defs/duration"
+            },
+            "min_interval_basis": {
+              "enum": ["scheme_rule", "scheme_guidance", "policy"]
+            },
+            "counter": {
+              "type": "object",
+              "required": ["kind", "slots"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "ring",
+                  "description": "Fixed-layout ring counter: 'slots' buckets of window/slots each, summed on read. Pointer-free, self-expiring, allocation-free, never under-counts (ADR-0001 R5)."
+                },
+                "slots": {
+                  "type": "integer",
+                  "minimum": 4,
+                  "maximum": 64
+                },
+                "slot_width": {
+                  "enum": ["uint8", "uint16", "uint32"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "rule-network-hard-stop": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "authority", "params", "after"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "network.hard_stop"
+        },
+        "enforcement": {
+          "const": "transaction",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "after": {
+          "$ref": "#/$defs/outcomePredicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["triggers"],
+          "additionalProperties": false,
+          "properties": {
+            "triggers": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "required": ["kind", "values"],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "enum": ["decline_category", "merchant_advice_code", "network_reason_code"]
+                  },
+                  "values": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 32,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 8
+                    }
+                  }
+                }
+              }
+            },
+            "scope": {
+              "enum": ["card", "card_transaction"]
+            }
+          }
+        }
+      }
+    },
+
+    "rule-network-retry-schedule": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "authority", "params", "after"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "network.retry_schedule"
+        },
+        "enforcement": {
+          "const": "presentation",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "after": {
+          "$ref": "#/$defs/outcomePredicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["source"],
+          "additionalProperties": false,
+          "properties": {
+            "source": {
+              "enum": ["merchant_advice_code", "fixed_schedule"],
+              "description": "Where the wait between re-presentments comes from. This is not exponential backoff: recovery probability is a function of WHY the issuer declined (payday, issuer window, velocity cooldown), not of elapsed time. The router does not sleep - the schedule gates re-presentments issued by the retry service."
+            },
+            "schedule": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "$ref": "#/$defs/duration"
+              }
+            },
+            "default_interval": {
+              "$ref": "#/$defs/duration"
+            },
+            "fallback_after_schedule": {
+              "enum": ["stop", "repeat_last"]
+            }
+          }
+        }
+      }
+    },
+
+    "rule-budget-attempt-cap": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "budget.attempt_cap"
+        },
+        "enforcement": {
+          "const": "transaction",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "relaxable": {
+          "$ref": "#/$defs/relaxable"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "after": {
+          "$ref": "#/$defs/outcomePredicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["limit", "window", "key", "counter"],
+          "additionalProperties": false,
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            },
+            "window": {
+              "$ref": "#/$defs/duration"
+            },
+            "key": {
+              "enum": ["card", "bin", "transaction", "merchant", "processor"]
+            },
+            "bin_prefix_len": {
+              "enum": [6, 8]
+            },
+            "counter": {
+              "type": "object",
+              "required": ["kind", "slots"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "ring"
+                },
+                "slots": {
+                  "type": "integer",
+                  "minimum": 4,
+                  "maximum": 64
+                },
+                "slot_width": {
+                  "enum": ["uint8", "uint16", "uint32"]
+                }
+              }
+            },
+            "on_exceeded": {
+              "enum": ["deny", "queue"],
+              "description": "'queue' hands the transaction to the re-presentment scheduler (out of scope for Decide(); the router does not sleep)."
+            }
+          }
+        }
+      }
+    },
+
+    "rule-budget-chain-depth": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "budget.chain_depth"
+        },
+        "enforcement": {
+          "const": "plan",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "relaxable": {
+          "$ref": "#/$defs/relaxable"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["limit"],
+          "additionalProperties": false,
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8,
+              "description": "Attempts per transaction, including the first. This cap does not replace ADR-0002's expected-value retry test; both must pass."
+            },
+            "ev_test_required": {
+              "type": "boolean",
+              "description": "Whether a fallback attempt must also pass ADR-0002's expected-value test (theta_hat*win - (1-theta_hat)*fee > 0)."
+            }
+          }
+        }
+      }
+    },
+
+    "rule-budget-reservation": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "budget.reservation"
+        },
+        "enforcement": {
+          "const": "lease",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["key", "ttl", "on_timeout"],
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "enum": ["card", "bin", "transaction", "merchant", "processor"]
+            },
+            "ttl": {
+              "enum": ["deadline_ms", "fixed"]
+            },
+            "ttl_ms": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 600000
+            },
+            "on_timeout": {
+              "const": "expire",
+              "description": "An unresolved attempt's lease expires at the deadline, so a late result never consumes the retry the next transaction needs (provisional counts are corrected by the outcome event, #10)."
+            }
+          }
+        }
+      }
+    },
+
+    "rule-mandate-require-3ds": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "mandate.require_3ds"
+        },
+        "enforcement": {
+          "const": "candidate",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "relaxable": {
+          "$ref": "#/$defs/relaxable"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["mode"],
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "enum": ["always", "if_supported_by_capability", "unless_exempt_evidence"],
+              "description": "A routing mandate, not a friction knob: it decides which processors are eligible."
+            }
+          }
+        }
+      }
+    },
+
+    "rule-mandate-must-process": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "mandate.must_process"
+        },
+        "enforcement": {
+          "const": "candidate",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "relaxable": {
+          "$ref": "#/$defs/relaxable"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["processors"],
+          "additionalProperties": false,
+          "properties": {
+            "processors": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 16,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/identifier"
+              }
+            },
+            "if_unavailable": {
+              "enum": ["fail_closed", "fall_back", "escalate"],
+              "description": "'fall_back' is spelled out rather than implied: silently ignoring a mandate is how a merchant discovers in a monthly review that their routing contract was not honoured."
+            }
+          }
+        }
+      }
+    },
+
+    "rule-mandate-exclude-processor": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "mandate.exclude_processor"
+        },
+        "enforcement": {
+          "const": "candidate",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "relaxable": {
+          "$ref": "#/$defs/relaxable"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["processors"],
+          "additionalProperties": false,
+          "properties": {
+            "processors": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 64,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/identifier"
+              }
+            },
+            "expires_at": {
+              "$ref": "#/$defs/timestamp"
+            }
+          }
+        }
+      }
+    },
+
+    "rule-mandate-domestic-acquirer": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "mandate.domestic_acquirer"
+        },
+        "enforcement": {
+          "const": "candidate",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "relaxable": {
+          "$ref": "#/$defs/relaxable"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "params": {
+          "type": "object",
+          "anyOf": [{"required": ["match"]}, {"required": ["acquirer_regions"]}],
+          "additionalProperties": false,
+          "properties": {
+            "match": {
+              "enum": ["card_country", "card_region", "merchant_country"],
+              "description": "What the acquirer's own domicile must equal. 'card_country' is the literal reading and is unsatisfiable whenever no acquirer is domiciled in the card's country (measured: 0.00 arms/decision for a UK card, spike [F6]) - which is why the region-list form exists."
+            },
+            "allow_same_region": {
+              "type": "boolean",
+              "description": "true means 'domestic-or-same-region' (e.g. any EEA acquirer); false means the acquirer must be in the same country."
+            },
+            "acquirer_regions": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 2, "maxLength": 16},
+              "description": "The acquirer's declared domicile region must be one of these - the same shape and the same catalog field as regulatory.data_residency, so 'where an acquirer is' has one spelling. This is the form to use when 'domestic' is a REGULATORY region rather than a geographic one: a UK card can be served from the EEA, so the merchant writes ['EEA','UK'] and keeps a checkable guarantee instead of waiving the rule (measured: 0.00 -> 1.00 arms/decision, spike [F6])."
+            }
+          }
+        }
+      }
+    },
+
+    "rule-econ-floor-margin": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "econ.floor_margin"
+        },
+        "enforcement": {
+          "const": "candidate",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "relaxable": {
+          "$ref": "#/$defs/relaxable"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["basis", "value_bps"],
+          "additionalProperties": false,
+          "properties": {
+            "basis": {
+              "enum": ["platform_margin_bps", "merchant_fee_ceiling_bps"],
+              "description": "ADR-0002 §5 flagged that 'merchant floor_margin' is ambiguous, because a merchant's own margin does not vary with the route we pick. The basis is therefore REQUIRED: platform_margin_bps is the varying quantity (take_bps - cost_bps(r)); merchant_fee_ceiling_bps is the alternative reading, kept expressible so the product answer is a config change rather than a semantic one."
+            },
+            "value_bps": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "on_violation": {
+              "const": "deny",
+              "description": "Not a penalty. ADR-0002 R13: nothing that gates real money is a penalty, because a penalty makes the contract negotiable per transaction."
+            }
+          }
+        }
+      }
+    },
+
+    "rule-econ-max-cost": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "econ.max_cost"
+        },
+        "enforcement": {
+          "const": "candidate",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "relaxable": {
+          "$ref": "#/$defs/relaxable"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["value_bps"],
+          "additionalProperties": false,
+          "properties": {
+            "value_bps": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            },
+            "include_fixed_fee": {
+              "type": "boolean"
+            },
+            "max_attempt_fee_minor": {
+              "$ref": "#/$defs/moneyMinor"
+            }
+          }
+        }
+      }
+    },
+
+    "rule-preference-rank": {
+      "type": "object",
+      "required": ["id", "rule", "rationale", "params"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/tag"
+        },
+        "rule": {
+          "const": "preference.rank"
+        },
+        "enforcement": {
+          "const": "ordering",
+          "description": "Enforcement point, fixed by the rule head (check.py SV12). Only `candidate` and `transaction` rules can refuse an arm or empty the set; `plan` shapes the fallback chain, `ordering` may only reorder, `lease` accounts for in-flight attempts, and `presentation` gates the retry scheduler outside this decision. A document may state this field - it is validated against the value above - but cannot choose it: moving a law or a scheme rule to a cheaper point of enforcement is a schema change."
+        },
+        "rationale": {
+          "$ref": "#/$defs/rationale"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "authority": {
+          "$ref": "#/$defs/authority"
+        },
+        "relaxable": {
+          "$ref": "#/$defs/relaxable"
+        },
+        "when": {
+          "$ref": "#/$defs/predicate"
+        },
+        "params": {
+          "type": "object",
+          "required": ["processors", "mode"],
+          "additionalProperties": false,
+          "properties": {
+            "processors": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 16,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/identifier"
+              }
+            },
+            "tier": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4
+            },
+            "mode": {
+              "enum": ["restrict", "tie_break"],
+              "description": "Only two sanctioned forms. 'restrict' narrows the eligible set to this tier WHEN THE TIER IS NON-EMPTY, falling back to the next tier otherwise, so a preference can never make a request unroutable. 'tie_break' orders within the bandit's own scoring noise. Score bonuses are rejected: they make the recorded margin disagree with the objective, which corrupts both #15's OPE and the audit."
+            },
+            "fallback": {
+              "enum": ["next_tier", "all_eligible"]
+            },
+            "tie_epsilon_bps": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        }
+      }
+    }
+  }
+}

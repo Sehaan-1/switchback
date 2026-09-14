@@ -1,0 +1,317 @@
+{
+  "schema_version": "1.0.0",
+  "id": "invalid-type-mismatch",
+  "revision": 3,
+  "description": "Aurora Marketplace: strict residency + a strict domestic-acquiring mandate + a single-processor USD commitment. Deliberately the document that produces infeasible outcomes, so the failure path is exercised by a real configuration.",
+  "valid_from": "2026-09-10",
+  "scope": {
+    "kind": "merchant_route_class",
+    "merchant_id": "aurora",
+    "route_class": "card_ecom",
+    "layer_priority": 200
+  },
+  "precedence": {
+    "fixed_prefix": [
+      "regulatory",
+      "network"
+    ],
+    "order": [
+      "budget",
+      "econ",
+      "mandate"
+    ],
+    "tie_break": "strictest_first"
+  },
+  "fail_mode": {
+    "empty_eligible_set": "escalate",
+    "guard_trip": "deny_and_alert",
+    "missing_capability": "exclude",
+    "unknown_decline_category": "deny_reattempt",
+    "counter_unavailable": "deny"
+  },
+  "policy": {
+    "catalog_version": "acquirer-catalog-2026.09.1",
+    "catalog_hash": "c8351da87a9496e835229849344d2da2195354939ea1f59f193c83e2b42a2b01",
+    "processor_ids": [
+      "alpha",
+      "bravo",
+      "charlie",
+      "delta",
+      "echo",
+      "foxtrot"
+    ],
+    "acquirer_regions": [
+      "EEA",
+      "UK",
+      "US",
+      "LATAM",
+      "APAC"
+    ]
+  },
+  "regulatory": [
+    {
+      "id": "eea-only-residency",
+      "rule": "regulatory.data_residency",
+      "rationale": "EEA-issued cards must be processed by an EEA-established acquirer; legal review refused the transfer mechanism that a cross-border route would need.",
+      "authority": {
+        "basis": "law",
+        "citation": "GDPR Art. 44-46; Auroras DPA review 2026-09-04"
+      },
+      "when": {
+        "field": "card_region",
+        "op": "eq",
+        "value": "EEA"
+      },
+      "params": {
+        "acquirer_regions": [
+          "EEA"
+        ],
+        "require_declared_capability": true,
+        "on_missing_capability": "exclude"
+      }
+    },
+    {
+      "id": "sca-always",
+      "rule": "regulatory.sca_required",
+      "rationale": "Aurora does not take the exemption evidence at face value today: every EEA/UK card takes a 3DS-capable route until #11's exemption analysis is in production.",
+      "authority": {
+        "basis": "law",
+        "citation": "PSD2 Art. 97; Delegated Regulation (EU) 2018/389",
+        "note": "Deliberately stricter than the law: this is the conservative reading we are allowed to take, not the one we are required to take."
+      },
+      "when": {
+        "any": [
+          {
+            "field": "card_region",
+            "op": "eq",
+            "value": "EEA"
+          },
+          {
+            "field": "card_region",
+            "op": "eq",
+            "value": "UK"
+          }
+        ]
+      },
+      "params": {
+        "mode": "always",
+        "on_missing_evidence": "deny"
+      }
+    }
+  ],
+  "network": [
+    {
+      "id": "reattempt-15-30d",
+      "rule": "network.reattempt_limit",
+      "rationale": "Scheme reattempt ceiling, counted per card so it can never under-count.",
+      "authority": {
+        "basis": "scheme_rule",
+        "citation": "Visa Excessive Reattempts; Mastercard excessive-attempts programme"
+      },
+      "after": {
+        "field": "decline_category",
+        "op": "in",
+        "value": [
+          2,
+          3
+        ]
+      },
+      "params": {
+        "window": "P30D",
+        "limit": 15,
+        "key": "card",
+        "applies_to_categories": [
+          2,
+          3
+        ],
+        "missing_category": "deny",
+        "max_per_day": 1,
+        "min_interval": "P1D",
+        "min_interval_basis": "scheme_guidance",
+        "counter": {
+          "kind": "ring",
+          "slots": 30,
+          "slot_width": "uint8"
+        }
+      }
+    },
+    {
+      "id": "category-1-stop",
+      "rule": "network.hard_stop",
+      "rationale": "Never-approve declines stop the card rather than the transaction.",
+      "authority": {
+        "basis": "scheme_rule",
+        "citation": "Visa decline category 1"
+      },
+      "after": {
+        "field": "decline_category",
+        "op": "eq",
+        "value": 1
+      },
+      "params": {
+        "triggers": [
+          {
+            "kind": "decline_category",
+            "values": [
+              "1"
+            ]
+          }
+        ],
+        "scope": "card"
+      }
+    }
+  ],
+  "budget": [
+    {
+      "id": "auth-cap-3-per-day",
+      "rule": "budget.attempt_cap",
+      "rationale": "Three attempts per card per day. Chosen to sit under the issuer velocity thresholds that produce 'do not honour' on the fourth attempt.",
+      "authority": {
+        "basis": "policy"
+      },
+      "relaxable": {
+        "approved_by": "risk@aurora",
+        "approved_at": "2026-09-05T10:00:00Z",
+        "expires_at": "2026-12-05T10:00:00Z",
+        "reason": "Black-Friday recovery window; escape rate is alerted and capped at 2% of volume.",
+        "scope": "traffic_share",
+        "max_traffic_share_bps": 200
+      },
+      "params": {
+        "limit": 3,
+        "window": "P1D",
+        "key": "card",
+        "counter": {
+          "kind": "ring",
+          "slots": 24,
+          "slot_width": "uint8"
+        },
+        "on_exceeded": "queue"
+      }
+    },
+    {
+      "id": "chain-depth-3",
+      "rule": "budget.chain_depth",
+      "rationale": "Marketplace checkout tolerates a longer chain than a subscription flow; the per-attempt expected-value test still gates each step.",
+      "authority": {
+        "basis": "policy"
+      },
+      "params": {
+        "limit": 3,
+        "ev_test_required": true
+      }
+    }
+  ],
+  "mandate": [
+    {
+      "id": "domestic-card-country",
+      "rule": "mandate.domestic_acquirer",
+      "rationale": "Finance asked for domestic acquiring on every EEA card because the cross-border interchange line is the largest single cost item. Read literally: the acquirer must be in the card's own country.",
+      "authority": {
+        "basis": "contract",
+        "note": "This is the rule that the issue's conflict question is about; see the ADR for what it costs and the two ways to fix it."
+      },
+      "relaxable": {
+        "approved_by": "controller@aurora",
+        "approved_at": "2026-09-08T15:00:00Z",
+        "expires_at": "2026-11-30T00:00:00Z",
+        "reason": "Allows a same-region (EEA-wide) acquirer where no domestic one exists or is reachable, bounded to 30% of volume.",
+        "scope": "traffic_share",
+        "max_traffic_share_bps": 3000
+      },
+      "when": {
+        "field": "card_region",
+        "op": "prefix",
+        "value": 12
+      },
+      "params": {
+        "match": "card_country",
+        "allow_same_region": false
+      }
+    },
+    {
+      "id": "usd-goes-to-alpha",
+      "rule": "mandate.must_process",
+      "rationale": "The 2026 agreement commits all USD volume to alpha in exchange for a rate step.",
+      "authority": {
+        "basis": "contract",
+        "citation": "Alpha volume commitment, annex B"
+      },
+      "relaxable": {
+        "approved_by": "cfo@aurora",
+        "approved_at": "2026-01-02T09:00:00Z",
+        "expires_at": "2027-01-02T09:00:00Z",
+        "reason": "Monthly tolerance when alpha is ineligible for the card or degraded.",
+        "scope": "unbounded"
+      },
+      "when": {
+        "field": "currency",
+        "op": "eq",
+        "value": "USD"
+      },
+      "params": {
+        "processors": [
+          "alpha"
+        ],
+        "if_unavailable": "escalate"
+      }
+    }
+  ],
+  "econ": [
+    {
+      "id": "floor-margin-40",
+      "rule": "econ.floor_margin",
+      "rationale": "Aurora's take rate is thin, so the floor is 40 bps (the same number the simulator's floor=40 contexts use). Deliberately NOT relaxable: this is where a relaxation would be most convenient and least defensible.",
+      "authority": {
+        "basis": "policy"
+      },
+      "params": {
+        "basis": "platform_margin_bps",
+        "value_bps": 40,
+        "on_violation": "deny"
+      }
+    }
+  ],
+  "preference": [
+    {
+      "id": "prefer-delta-fast",
+      "rule": "preference.rank",
+      "rationale": "Delta is the fastest acquirer in the catalog and checkout conversion is sensitive to it; preference only breaks ties inside the bandit's own noise.",
+      "authority": {
+        "basis": "policy"
+      },
+      "params": {
+        "processors": [
+          "delta"
+        ],
+        "tier": 1,
+        "mode": "tie_break",
+        "tie_epsilon_bps": 10
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "id": "pin-charlie-supported",
+      "rule": "mandate.must_process",
+      "rationale": "Ops pinned a disputed transaction to charlie while the reconciliation ticket is open.",
+      "issued_at": "2026-09-14T09:12:00Z",
+      "issued_by": "ops-console:s.mehta",
+      "ttl": "PT30M",
+      "request_ref": "txn_01J8ZW7M2P",
+      "params": {
+        "processors": [
+          "charlie"
+        ],
+        "if_unavailable": "escalate"
+      }
+    }
+  ],
+  "audit": {
+    "explain": true,
+    "log_pass_trace": true,
+    "hash_algorithm": "sha256",
+    "chain": true,
+    "retention_days": 400
+  }
+}
