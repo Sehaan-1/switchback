@@ -5,7 +5,7 @@
 It is a working compiler+evaluator for the artifact the ADR proposes — the schema in
 [`constraints/schema/`](../../constraints/schema/), the fixture catalog and the two merchant
 documents in [`constraints/examples/`](../../constraints/examples/) — loaded through the real
-CI checker, not a parallel copy of it. Read the module docstring first: it lists the sections
+checker, not a parallel copy of it. Read the module docstring first: it lists the sections
 and what question each one answers.
 
 ```bash

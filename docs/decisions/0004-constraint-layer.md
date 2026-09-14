@@ -1,8 +1,9 @@
 # ADR-0004: ConstraintSet — a closed-vocabulary document, filtered before sampling
 
 Resolves [#5](https://github.com/Sehaan-1/switchback/issues/5). Evidence:
-[`spikes/0005-constraints/`](../spikes/0005-constraints/) — a compiler and evaluator for the
-actual schema, loaded through the actual CI gate (not a parallel copy of it). Reproduce with
+[`spikes/0005-constraints/`](../../spikes/0005-constraints/RESULTS.md) — a compiler and evaluator for the
+actual schema, loaded through the repository's own gate (not a parallel copy of it). Reproduce
+with
 `python3 spikes/0005-constraints/policy.py 100000` (~100 s, stdlib only, fixed seed).
 
 ## Decision
@@ -129,7 +130,8 @@ violations / 5,000 decisions), so two documents cannot be combined into a weaker
 **Configuration without writing code** looks like this, end to end: pick a head → set params →
 optionally add a `when`/`after` predicate → pin `policy.catalog_hash` → run
 `python3 constraints/check.py`. The 39 `$defs` and ~56 kB of schema are what a merchant's
-config UI renders; the checker is what CI runs; and the census (§4) is what tells a merchant
+config UI renders; the checker is what a CI job runs (nothing wires it yet — that lands with
+#17's gates); and the census (§4) is what tells a merchant
 their document is *satisfiable*, which no validator can.
 
 **The escape hatch, bounded.** `constraints[]` carries single-transaction refinements — pin

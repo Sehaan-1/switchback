@@ -30,7 +30,7 @@ Decided so far:
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
 spikes/             small, reproducible probes that back a decision (not implementation)
-constraints/        the ConstraintSet schema, the rule catalog, the examples and their CI gate
+constraints/        the ConstraintSet schema, the rule catalog, the examples and the gate over them
 ```
 
 Implementation (engine, simulator, dashboard, benchmarks) starts after the map is complete.
