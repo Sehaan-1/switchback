@@ -1,0 +1,544 @@
+{
+  "schema_version": "1.0.0",
+  "id": "baseline-steady-v1",
+  "title": "Steady state: six acquirers, no disturbances",
+  "description": "The reference world. Auth rates, 3DS friction and the 0.22 challenge-abandonment rate are carried over from spikes/0003 and spikes/0004 so a harness number and a spike number can be read side by side; p95 and the decline mix are new, because spike 0004's latency shape could not express a tail beyond its own p99 (spike 0006 [M4]) and it had no decline codes at all. The decline mix is calibrated so the fleet-mean family shares land inside the published ranges quoted in [M6]. Economics (cost_bps, fees) and capability (currencies, markets, three_ds) are NOT here: they are catalog facts, pinned by catalog_hash.",
+  "model_version": "fleet-v1",
+  "seed": 20260915,
+  "clock": {
+    "start": "2026-09-01T00:00:00Z",
+    "duration_s": 604800,
+    "resolution_ms": 1
+  },
+  "source": {
+    "kind": "synthetic",
+    "traffic": {
+      "arrivals": {
+        "model": "poisson",
+        "rate_tps": 20.0,
+        "congestion_coefficient": 0.35,
+        "diurnal": {
+          "model": "sinusoidal",
+          "amplitude": 0.55,
+          "peak_hour": 20.0
+        }
+      },
+      "context_mix": {
+        "bin_class": {
+          "consumer_credit": 46,
+          "consumer_debit": 25,
+          "premium_credit": 12,
+          "corporate": 10,
+          "prepaid": 7
+        },
+        "region": {
+          "EEA": 44,
+          "UK": 12,
+          "US": 24,
+          "LATAM": 10,
+          "APAC": 10
+        },
+        "merchant_category": {
+          "retail": 34,
+          "digital_goods": 26,
+          "travel": 14,
+          "marketplace": 16,
+          "gaming": 10
+        },
+        "route_class": {
+          "oneoff_cnp": 78,
+          "recurring_mit": 14,
+          "card_on_file": 6,
+          "installment": 2
+        },
+        "entry_mode": {
+          "ecommerce": 88,
+          "wallet": 8,
+          "recurring": 3,
+          "moto": 1
+        },
+        "mandate_share": 0.03,
+        "sca_exemption_share": 0.22,
+        "deadline_ms": 900,
+        "amount": {
+          "model": "lognormal",
+          "median_minor": 4600,
+          "sigma": 0.95,
+          "min_minor": 600,
+          "max_minor": 400000
+        }
+      }
+    }
+  },
+  "fleet": {
+    "catalog": "constraints/catalog/acquirer-catalog.example.json",
+    "catalog_hash": "sha256:c8351da87a9496e835229849344d2da2195354939ea1f59f193c83e2b42a2b01",
+    "acquirers": {
+      "alpha": {
+        "auth": {
+          "base_rate": 0.915,
+          "bin_class_multiplier": {
+            "premium_credit": 1.015,
+            "prepaid": 0.905,
+            "corporate": 0.955
+          },
+          "region_multiplier": {
+            "US": 1.02,
+            "EEA": 0.985,
+            "LATAM": 0.97
+          },
+          "amount_sensitivity": {
+            "kink_minor": 80000,
+            "slope_per_10k_minor": 0.0022,
+            "cap": 0.09
+          }
+        },
+        "decline_mix": {
+          "scheme": "iso8583",
+          "weights": {
+            "51": 24,
+            "61": 5,
+            "65": 4,
+            "05": 19,
+            "12": 2,
+            "91": 4,
+            "96": 3,
+            "14": 6,
+            "54": 4,
+            "57": 19,
+            "62": 1,
+            "59": 3,
+            "01": 2,
+            "41": 1,
+            "43": 1,
+            "N7": 2
+          }
+        },
+        "latency": {
+          "model": "lognormal_gpd",
+          "p50_ms": 190,
+          "p95_ms": 420,
+          "p99_ms": 640,
+          "floor_ms": 60,
+          "tail_index": 0.25
+        },
+        "three_ds": {
+          "frictionless_rate": 0.9,
+          "challenge_abandon_rate": 0.22,
+          "bin_class_multiplier": {
+            "premium_credit": 1.06,
+            "corporate": 1.1,
+            "prepaid": 0.88
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.05,
+            "travel": 0.9,
+            "gaming": 0.85,
+            "marketplace": 0.95
+          },
+          "liability_shift_uplift": 1.055
+        },
+        "late_settlement": {
+          "share": 0.3,
+          "delay": {
+            "median_s": 8.0,
+            "sigma": 0.9
+          }
+        }
+      },
+      "bravo": {
+        "auth": {
+          "base_rate": 0.884,
+          "bin_class_multiplier": {
+            "premium_credit": 1.02,
+            "prepaid": 0.93,
+            "corporate": 0.97
+          },
+          "region_multiplier": {
+            "EEA": 1.02,
+            "UK": 1.01,
+            "APAC": 0.96
+          },
+          "amount_sensitivity": {
+            "kink_minor": 70000,
+            "slope_per_10k_minor": 0.0026,
+            "cap": 0.11
+          }
+        },
+        "decline_mix": {
+          "scheme": "iso8583",
+          "weights": {
+            "51": 26,
+            "61": 5,
+            "65": 4,
+            "05": 20,
+            "12": 2,
+            "91": 3,
+            "96": 3,
+            "14": 5,
+            "54": 4,
+            "57": 19,
+            "62": 1,
+            "59": 3,
+            "01": 1,
+            "41": 1,
+            "43": 1,
+            "N7": 2
+          }
+        },
+        "latency": {
+          "model": "lognormal_gpd",
+          "p50_ms": 240,
+          "p95_ms": 560,
+          "p99_ms": 900,
+          "floor_ms": 70,
+          "tail_index": 0.25
+        },
+        "three_ds": {
+          "frictionless_rate": 0.78,
+          "challenge_abandon_rate": 0.22,
+          "bin_class_multiplier": {
+            "premium_credit": 1.04,
+            "corporate": 1.08,
+            "prepaid": 0.9
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.04,
+            "travel": 0.88,
+            "gaming": 0.84,
+            "marketplace": 0.94
+          },
+          "liability_shift_uplift": 1.055
+        },
+        "late_settlement": {
+          "share": 0.3,
+          "delay": {
+            "median_s": 8.0,
+            "sigma": 0.9
+          }
+        }
+      },
+      "charlie": {
+        "auth": {
+          "base_rate": 0.842,
+          "bin_class_multiplier": {
+            "premium_credit": 1.01,
+            "prepaid": 0.89,
+            "corporate": 1.03
+          },
+          "region_multiplier": {
+            "EEA": 1.03,
+            "UK": 0.98
+          },
+          "amount_sensitivity": {
+            "kink_minor": 60000,
+            "slope_per_10k_minor": 0.0031,
+            "cap": 0.13
+          }
+        },
+        "decline_mix": {
+          "scheme": "iso8583",
+          "weights": {
+            "51": 27,
+            "61": 6,
+            "65": 5,
+            "05": 18,
+            "12": 3,
+            "91": 4,
+            "96": 3,
+            "14": 6,
+            "54": 4,
+            "57": 15,
+            "62": 1,
+            "59": 2,
+            "01": 2,
+            "41": 1,
+            "43": 1,
+            "N7": 2
+          }
+        },
+        "latency": {
+          "model": "lognormal_gpd",
+          "p50_ms": 300,
+          "p95_ms": 700,
+          "p99_ms": 1150,
+          "floor_ms": 80,
+          "tail_index": 0.25
+        },
+        "three_ds": {
+          "frictionless_rate": 0.68,
+          "challenge_abandon_rate": 0.22,
+          "bin_class_multiplier": {
+            "premium_credit": 1.03,
+            "corporate": 1.12,
+            "prepaid": 0.86
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.02,
+            "travel": 0.86,
+            "gaming": 0.82,
+            "marketplace": 0.92
+          },
+          "liability_shift_uplift": 1.055
+        },
+        "late_settlement": {
+          "share": 0.3,
+          "delay": {
+            "median_s": 11.0,
+            "sigma": 0.9
+          }
+        }
+      },
+      "delta": {
+        "auth": {
+          "base_rate": 0.935,
+          "bin_class_multiplier": {
+            "premium_credit": 1.012,
+            "prepaid": 0.9,
+            "corporate": 0.95
+          },
+          "region_multiplier": {
+            "EEA": 1.01,
+            "APAC": 1.02,
+            "US": 0.99
+          },
+          "amount_sensitivity": {
+            "kink_minor": 90000,
+            "slope_per_10k_minor": 0.0018,
+            "cap": 0.07
+          }
+        },
+        "decline_mix": {
+          "scheme": "iso8583",
+          "weights": {
+            "51": 25,
+            "61": 5,
+            "65": 4,
+            "05": 18,
+            "12": 2,
+            "91": 3,
+            "96": 2,
+            "14": 6,
+            "54": 4,
+            "57": 21,
+            "62": 1,
+            "59": 3,
+            "01": 2,
+            "41": 1,
+            "43": 1,
+            "N7": 2
+          }
+        },
+        "latency": {
+          "model": "lognormal_gpd",
+          "p50_ms": 170,
+          "p95_ms": 340,
+          "p99_ms": 520,
+          "floor_ms": 55,
+          "tail_index": 0.25
+        },
+        "three_ds": {
+          "frictionless_rate": 0.92,
+          "challenge_abandon_rate": 0.22,
+          "bin_class_multiplier": {
+            "premium_credit": 1.07,
+            "corporate": 1.09,
+            "prepaid": 0.89
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.06,
+            "travel": 0.92,
+            "gaming": 0.88,
+            "marketplace": 0.96
+          },
+          "liability_shift_uplift": 1.055
+        },
+        "late_settlement": {
+          "share": 0.3,
+          "delay": {
+            "median_s": 7.0,
+            "sigma": 0.9
+          }
+        }
+      },
+      "echo": {
+        "auth": {
+          "base_rate": 0.9,
+          "bin_class_multiplier": {
+            "premium_credit": 1.018,
+            "prepaid": 0.9,
+            "corporate": 0.96
+          },
+          "region_multiplier": {
+            "US": 1.025,
+            "EEA": 0.98,
+            "LATAM": 0.95
+          },
+          "amount_sensitivity": {
+            "kink_minor": 75000,
+            "slope_per_10k_minor": 0.0024,
+            "cap": 0.1
+          }
+        },
+        "decline_mix": {
+          "scheme": "iso8583",
+          "weights": {
+            "51": 25,
+            "61": 5,
+            "65": 4,
+            "05": 19,
+            "12": 2,
+            "91": 3,
+            "96": 3,
+            "14": 6,
+            "54": 4,
+            "57": 20,
+            "62": 1,
+            "59": 3,
+            "01": 1,
+            "41": 1,
+            "43": 1,
+            "N7": 2
+          }
+        },
+        "latency": {
+          "model": "lognormal_gpd",
+          "p50_ms": 210,
+          "p95_ms": 480,
+          "p99_ms": 760,
+          "floor_ms": 65,
+          "tail_index": 0.25
+        },
+        "three_ds": {
+          "frictionless_rate": 0.85,
+          "challenge_abandon_rate": 0.22,
+          "bin_class_multiplier": {
+            "premium_credit": 1.05,
+            "corporate": 1.07,
+            "prepaid": 0.87
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.05,
+            "travel": 0.89,
+            "gaming": 0.86,
+            "marketplace": 0.95
+          },
+          "liability_shift_uplift": 1.055
+        },
+        "late_settlement": {
+          "share": 0.3,
+          "delay": {
+            "median_s": 9.0,
+            "sigma": 0.9
+          }
+        }
+      },
+      "foxtrot": {
+        "auth": {
+          "base_rate": 0.806,
+          "bin_class_multiplier": {
+            "premium_credit": 1.03,
+            "prepaid": 0.86,
+            "corporate": 0.92
+          },
+          "region_multiplier": {
+            "LATAM": 1.03,
+            "EEA": 1.0,
+            "APAC": 0.96
+          },
+          "amount_sensitivity": {
+            "kink_minor": 50000,
+            "slope_per_10k_minor": 0.0038,
+            "cap": 0.16
+          }
+        },
+        "decline_mix": {
+          "scheme": "iso8583",
+          "weights": {
+            "51": 30,
+            "61": 6,
+            "65": 5,
+            "05": 20,
+            "12": 3,
+            "91": 5,
+            "96": 4,
+            "14": 6,
+            "54": 4,
+            "57": 9,
+            "62": 1,
+            "59": 3,
+            "01": 1,
+            "41": 1,
+            "43": 1,
+            "N7": 1
+          }
+        },
+        "latency": {
+          "model": "lognormal_gpd",
+          "p50_ms": 420,
+          "p95_ms": 1050,
+          "p99_ms": 1750,
+          "floor_ms": 110,
+          "tail_index": 0.25
+        },
+        "three_ds": {
+          "frictionless_rate": 0.6,
+          "challenge_abandon_rate": 0.22,
+          "bin_class_multiplier": {
+            "premium_credit": 1.02,
+            "corporate": 1.06,
+            "prepaid": 0.82
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.0,
+            "travel": 0.84,
+            "gaming": 0.8,
+            "marketplace": 0.9
+          },
+          "liability_shift_uplift": 1.055
+        },
+        "late_settlement": {
+          "share": 0.3,
+          "delay": {
+            "median_s": 14.0,
+            "sigma": 0.9
+          }
+        }
+      }
+    },
+    "correlation": {
+      "factors": [
+        {
+          "id": "eea-issuer-net",
+          "acquirers": [
+            "bravo",
+            "charlie",
+            "delta",
+            "foxtrot"
+          ],
+          "weight": 0.35,
+          "model": "ar1",
+          "rho": 0.9,
+          "bucket_s": 300
+        },
+        {
+          "id": "us-issuer-net",
+          "acquirers": [
+            "alpha",
+            "echo"
+          ],
+          "weight": 0.3,
+          "model": "ar1",
+          "rho": 0.9,
+          "bucket_s": 300
+        }
+      ]
+    }
+  },
+  "events": [],
+  "recording": {
+    "mode": "all_arms",
+    "trace_path": "data/traces/baseline-steady-v1",
+    "late_settlement_window_s": 7200
+  }
+}

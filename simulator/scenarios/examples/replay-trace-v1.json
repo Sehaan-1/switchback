@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0.0",
+  "id": "replay-trace-v1",
+  "title": "Replay of a recorded week, with counterfactuals",
+  "description": "A trace source: contexts and attempt keys come from a recording (#13's export), outcomes come from the same key-derived streams a synthetic run uses, which is what makes a counterfactual on a real event reproducible instead of merely plausible. This document is also the shape of the contract with #13: a trace is only replayable if it carries (scenario_hash, seed, txn_seq) per row, and only counterfactually useful if it records every arm or logs the propensity ([M8]). The file itself is NOT committed -- traces are data, and /data is gitignored; this example documents the shape and the gate that checks it.",
+  "model_version": "fleet-v1",
+  "seed": 20260915,
+  "clock": {
+    "start": "2026-09-01T00:00:00Z",
+    "duration_s": 604800,
+    "resolution_ms": 1
+  },
+  "source": {
+    "kind": "trace",
+    "trace": {
+      "path": "data/traces/production-week-2026-09.jsonl",
+      "format": "jsonl",
+      "row_count": 250000,
+      "content_hash": "sha256:8f14e45fceea167a5a36dedd4bea2543a5f8ff0b1cba49a4b6d3a6f0e1a30b7c",
+      "context_fields": [
+        "txn_seq",
+        "attempt",
+        "acquirer",
+        "amount_minor",
+        "currency",
+        "bin_class",
+        "card_region",
+        "merchant_category",
+        "route_class",
+        "entry_mode",
+        "sca_required",
+        "mandate",
+        "deadline_ms",
+        "arrival_ms"
+      ]
+    }
+  },
+  "fleet": {
+    "catalog": "constraints/catalog/acquirer-catalog.example.json",
+    "catalog_hash": "sha256:c8351da87a9496e835229849344d2da2195354939ea1f59f193c83e2b42a2b01",
+    "acquirers": {
+      "alpha": {
+        "auth": {
+          "base_rate": 0.915
+        },
+        "decline_mix": {
+          "scheme": "iso8583",
+          "weights": {
+            "51": 26,
+            "05": 14,
+            "14": 7,
+            "54": 6,
+            "59": 3
+          }
+        },
+        "latency": {
+          "model": "lognormal_gpd",
+          "p50_ms": 190,
+          "p95_ms": 420,
+          "p99_ms": 640,
+          "floor_ms": 60,
+          "tail_index": 0.25
+        },
+        "three_ds": {
+          "frictionless_rate": 0.9,
+          "challenge_abandon_rate": 0.22
+        }
+      }
+    }
+  },
+  "events": [],
+  "recording": {
+    "mode": "all_arms",
+    "trace_path": "data/traces/replay-trace-v1",
+    "context_fields": [
+      "txn_seq",
+      "attempt",
+      "acquirer",
+      "outcome",
+      "code",
+      "latency_ms",
+      "arrival_ms"
+    ],
+    "late_settlement_window_s": 7200
+  }
+}

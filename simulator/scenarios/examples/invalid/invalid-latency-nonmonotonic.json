@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "id": "invalid-latency-nonmonotonic",
+  "title": "Negative fixture: p95 above p99",
+  "description": "MUST be rejected. The latency model is a quantile parameterisation, so a non-monotone triple is not an unusual distribution, it is an unsatisfiable one: the fitted body and tail would cross and the sampler would produce negative latencies. Copy-pasting a row into a new acquirer is how this happens in practice, which is why it is a check and not a comment.",
+  "extends": "baseline-steady-v1",
+  "fleet": {
+    "acquirers": {
+      "echo": {
+        "latency": {
+          "model": "lognormal_gpd",
+          "p50_ms": 210,
+          "p95_ms": 900,
+          "p99_ms": 760,
+          "floor_ms": 65,
+          "tail_index": 0.25
+        }
+      }
+    }
+  }
+}

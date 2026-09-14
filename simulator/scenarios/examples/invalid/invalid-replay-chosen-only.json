@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "id": "invalid-replay-chosen-only",
+  "title": "Negative fixture: a trace replay that records only the chosen arm",
+  "description": "MUST be rejected. Replaying a recorded week through a chosen_only recorder cannot answer 'what if we had routed this differently' -- the arm the policy did not pick has no recorded outcome and no logged propensity, so the counterfactual is not biased, it is missing. #15 can do IPS over a chosen_only trace WITH logged propensities; it cannot do full counterfactual replay, and a scenario that looks like it can is a trap for whoever reads the benchmark table.",
+  "extends": "replay-trace-v1",
+  "recording": {
+    "mode": "chosen_only"
+  }
+}

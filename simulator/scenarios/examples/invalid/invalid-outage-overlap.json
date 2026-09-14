@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "id": "invalid-outage-overlap",
+  "title": "Negative fixture: two outages on the same acquirer that overlap",
+  "description": "MUST be rejected. An acquirer that is already down cannot go down again; overlapping outages make the health function ambiguous (which recovery belongs to which event?) and, worse, they hide the bug where an author meant two DIFFERENT acquirers and mistyped the target. Catching it at authoring time is the whole reason the gate exists.",
+  "extends": "baseline-steady-v1",
+  "events": [
+    {
+      "type": "outage",
+      "at_s": 100000,
+      "target": "delta",
+      "duration_s": 3600,
+      "failure_mode": "timeout"
+    },
+    {
+      "type": "outage",
+      "at_s": 102000,
+      "target": "delta",
+      "duration_s": 1800,
+      "failure_mode": "connection_refused"
+    }
+  ]
+}

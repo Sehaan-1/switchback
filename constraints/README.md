@@ -5,7 +5,12 @@ This directory holds the canonical artifact of
 constraints are written against, the closed rule catalog the schema defines, the fixture
 acquirer catalog those rules read, two worked merchant documents, and the CI checker that
 gates all of them. It is data and a validator, not an engine — the Go evaluator that consumes
-a compiled document is [#6](https://github.com/Sehaan-1/switchback/issues/6)'s job.
+a compiled document is [#12](https://github.com/Sehaan-1/switchback/issues/12)'s job. The
+simulator that drives a compiled document through a decision is
+[ADR-0005](../docs/decisions/0005-simulation-harness.md), and it reads this directory's
+`catalog/acquirer-catalog.example.json` as its fixture fleet: a scenario pins that file by
+hash, so the constraint census and the harness benchmark are measured against the same six
+acquirers.
 
 ```
 schema/constraint-set.schema.json    the document grammar, v1.0.0 (JSON Schema draft 2020-12)
