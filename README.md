@@ -20,6 +20,9 @@ Decided so far:
 - [Reward function: two-part objective, end-to-end Bernoulli label, priced ambiguity]
   (docs/decisions/0002-reward-function.md)
   ([#4](https://github.com/Sehaan-1/switchback/issues/4))
+- [Routing algorithm: stochastic bandit with Beta-Bernoulli Thompson sampling, not a
+  static table](docs/decisions/0003-bandit-not-static-table.md)
+  ([#3](https://github.com/Sehaan-1/switchback/issues/3))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
