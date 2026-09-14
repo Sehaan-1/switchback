@@ -16,9 +16,9 @@ python3 bandit.py 40000    # ~10s, stdlib only, no network, fixed seed
   the margin workhorse, an improvement at the budget processor). A static table is a point
   estimate; the world is this wide.
 - **The adaptation gap.** [F1] measures the full-run and post-drift margin of every policy
-  against Thompson sampling. The static tables and the clock-based schemes (A/B rebalance)
-  pay no exploration tax and then miss the outage; the bandit pays a small tax and earns
-  it back.
+  against Thompson sampling. The static tables (including the latency-aware one ADR-0002
+  required) and the clock-based schemes (A/B rebalance) pay no exploration tax and then
+  miss the outage; the bandit pays a small tax and earns it back.
 - **The re-discovery gap.** [F3] shows that *every* online learner is slow to re-discover
   a challenger that improved, because its posterior is confident from pre-event data.
   This is the measured reason the architecture is "TS + drift detection" (#8), not bare
