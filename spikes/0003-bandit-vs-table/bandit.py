@@ -16,6 +16,9 @@ Policies, and the question each one answers:
   table_global     the literal proposal: fixed global weights ("60/30/10"), never updated.
   table_snapshot   the strong steelman: per-BIN-class argmax of a stale rate snapshot,
                    never updated. This is the fairest possible static table.
+  table_snapshot_lat  the baseline ADR-0002 said must exist: the same stale snapshot PLUS
+                   a static latency rule on the NOMINAL p99 -- not latency-blind, but its
+                   latency table is frozen, so it cannot see a processor get slower.
   ts               Beta-Bernoulli Thompson sampling (the chosen variant).
   ucb              UCB on the auth rate (mean + c*sqrt(2 ln t / n)), scored through margin.
   eps_05/eps_10    epsilon-greedy with a FIXED noise floor (no schedule): the critique is
@@ -412,6 +415,18 @@ class TableSnapshot(Policy):
         pass
 
 
+class TableSnapshotLat(TableSnapshot):
+    """The baseline ADR-0002 said must exist: static table PLUS a static latency rule.
+    Same stale rate snapshot, minus a static per-ms penalty on the NOMINAL p99. It is not
+    latency-blind -- but its latency table is frozen, so it cannot see a processor get
+    slower. (KAPPA is fleet.py's static-latency-penalty constant.)"""
+    kind = "table_snapshot_lat"
+    KAPPA = 0.0069  # cents/ms
+
+    def index(self, ctx, pi, rng):
+        return self.score(self.est[pi][ctx.cls_i], ctx, pi) - self.KAPPA * FLEET[pi].lat_p99_ms
+
+
 class Freeze(Policy):
     """Hybrid option 3 (the costly reading): alternate TS-explore and frozen-table-exploit.
     Each phase is `k` transactions; the exploit phase routes argmax of the means frozen at
@@ -620,6 +635,7 @@ def main() -> int:
     policies = [
         TableGlobal("table_global", gw, est),
         TableSnapshot("table_snapshot", est),
+        TableSnapshotLat("table_snapshot_lat", est),
         Thompson("ts", est),
         UCB("ucb", est),
         EpsGreedy("eps_05", 0.05, est),
@@ -660,13 +676,18 @@ def main() -> int:
 
     print("""
   Reading it: the warmup column is the cold-start exploration tax; the post-drift column
-  is adaptation. table_global and table_snapshot pay no tax and then miss the outage
-  (the snapshot loses ~44 euros per 1k post-drift); ucb and eps pay a permanent exploration
-  tax (a bonus / a noise floor); exp3 pays a variance tax on every decision; ab pays a
-  uniform re-measurement tax each cycle; greedy matches TS on margin but has no
-  uncertainty to quote (see F3); freeze approximates TS while routing through a stale
-  table between freezes. That is the "bandit, conditional on pricing what a table
-  cannot learn" framing ADR-0002 handed this ticket.""")
+  is adaptation. table_global and both table_snapshot variants pay no tax and then miss
+  the outage (each snapshot loses ~42-44 euros per 1k post-drift; the latency-aware one
+  knows charlie's nominal ~10% timeout rate but not the x3 degradation); ucb and eps pay
+  a permanent exploration tax (a bonus / a noise floor); exp3 pays a variance tax on
+  every decision; ab pays a uniform re-measurement tax each cycle; greedy matches TS on
+  margin but has no uncertainty to quote (see F3); freeze approximates TS while routing
+  through a stale table between freezes. That is the "bandit, conditional on pricing
+  what a table cannot learn" framing ADR-0002 handed this ticket.
+  Note the oracle row: it is a RATE-only oracle (true auth rates, no latency knowledge),
+  so the deadline collision beats it -- TS prices learned timeouts via pi_hat*lambda_to
+  and edges it by +17.6 c/1k. Negative regret against a rate-only oracle is not a win;
+  it is the mis-specified-oracle case ADR-0002 already documented.""")
 
     print("\n[F3] why the architecture is TS + drift detection, not TS alone")
     print("     Share of large consumer-credit tickets routed to foxtrot after it improved")
