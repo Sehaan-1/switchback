@@ -1,0 +1,280 @@
+{
+  "algorithm": "splitmix64-indexed-v1",
+  "description": "Golden vectors for the harness's deterministic stream (ADR-0005 \u00a74). Any implementation -- Go, Python, or the analysis notebook that regenerates a counterfactual -- must reproduce these exactly. `keys` is the stream key tuple (a domain tag first, then integers or fnv1a64-hashed identifiers); `index` addresses one draw inside that stream; `u` is the resulting double in [0,1). Note the attempt domain: the acquirer enters as fnv1a64(id), never as its position in the fleet, so adding an acquirer cannot move another acquirer's stream.",
+  "spec": {
+    "mix64": "splitmix64 finaliser, Stafford variant 13",
+    "stream": "h = seed; for k in keys: h = mix64(h ^ key64(k))",
+    "key64": "str -> FNV-1a/64 of UTF-8 bytes; int -> (int + 0x9E3779B97F4A7C15) mod 2^64",
+    "draw": "float64(mix64((stream + index * 0x9E3779B97F4A7C15) mod 2^64) >> 11) * 2^-53",
+    "domains": [
+      "arr",
+      "ctx",
+      "att",
+      "fac"
+    ]
+  },
+  "vectors": [
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        0
+      ],
+      "index": 0,
+      "u": 0.9476007581275008
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        0
+      ],
+      "index": 1,
+      "u": 0.8857295950882264
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        0
+      ],
+      "index": 8,
+      "u": 0.24642838215339768
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        1
+      ],
+      "index": 0,
+      "u": 0.7735662122791878
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        1
+      ],
+      "index": 1,
+      "u": 0.3628497566560668
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        1
+      ],
+      "index": 8,
+      "u": 0.38705887402704353
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        7
+      ],
+      "index": 0,
+      "u": 0.330249163410378
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        7
+      ],
+      "index": 1,
+      "u": 0.6137136259774594
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        7
+      ],
+      "index": 8,
+      "u": 0.07560852079958047
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        999999
+      ],
+      "index": 0,
+      "u": 0.43809431305726587
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        999999
+      ],
+      "index": 1,
+      "u": 0.5035457535133971
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "ctx",
+        999999
+      ],
+      "index": 8,
+      "u": 0.3665237196535074
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "arr",
+        0
+      ],
+      "index": 0,
+      "u": 0.25004009370916647
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "arr",
+        1
+      ],
+      "index": 0,
+      "u": 0.1057021396117016
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "arr",
+        42
+      ],
+      "index": 0,
+      "u": 0.5352700077933292
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "att",
+        7,
+        9999721509958787115,
+        0
+      ],
+      "index": 0,
+      "note": "acquirer=alpha attempt=0 txn=7",
+      "u": 0.6762227564866151
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "att",
+        7,
+        9999721509958787115,
+        1
+      ],
+      "index": 0,
+      "note": "acquirer=alpha attempt=1 txn=7",
+      "u": 0.5674343121756502
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "att",
+        7,
+        16849641328603749935,
+        0
+      ],
+      "index": 0,
+      "note": "acquirer=foxtrot attempt=0 txn=7",
+      "u": 0.0737979955093151
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "att",
+        7,
+        16849641328603749935,
+        1
+      ],
+      "index": 0,
+      "note": "acquirer=foxtrot attempt=1 txn=7",
+      "u": 0.38063107640475924
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "att",
+        7,
+        4696241639824874227,
+        0
+      ],
+      "index": 0,
+      "note": "acquirer=aardvark attempt=0 txn=7",
+      "u": 0.4491445281887487
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "att",
+        7,
+        4696241639824874227,
+        1
+      ],
+      "index": 0,
+      "note": "acquirer=aardvark attempt=1 txn=7",
+      "u": 0.2066952069742286
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "fac",
+        9556929695107179268,
+        0
+      ],
+      "index": 0,
+      "note": "bucket=0",
+      "u": 0.8724843168171373
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "fac",
+        9556929695107179268,
+        1
+      ],
+      "index": 0,
+      "note": "bucket=1",
+      "u": 0.08249095291831754
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "fac",
+        9556929695107179268,
+        2015
+      ],
+      "index": 0,
+      "note": "bucket=2015",
+      "u": 0.7642044146847161
+    },
+    {
+      "seed": 1,
+      "keys": [
+        "ctx",
+        0
+      ],
+      "index": 0,
+      "note": "seed=1",
+      "u": 0.2262238505784625
+    },
+    {
+      "seed": 20260915,
+      "keys": [
+        "att",
+        0,
+        9999721509958787115,
+        0
+      ],
+      "index": 6,
+      "note": "highest fleet-v1 draw index (late-settlement delay)",
+      "u": 0.7984041526235828
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "id": "black-friday-degraded-v1",
+  "title": "Peak-load spike while the router's favourite acquirer degrades",
+  "description": "The ticket's 'Black Friday spike + Stripe degraded', as an overlay: 26 lines over the baseline, not a 400-line copy. (The fixture fleet has no Stripe; the target is 'delta', the acquirer a router learns to prefer -- degrading the best arm is the case worth simulating, because it is the one where a stale policy keeps paying.) The spike brings 3x arrivals AND a latent-factor shock AND a 90-minute ramp on delta, because in reality those three arrive together and an engine that survives them separately may not survive them together.",
+  "extends": "baseline-steady-v1",
+  "source": {
+    "kind": "synthetic",
+    "traffic": {
+      "arrivals": {
+        "congestion_coefficient": 0.55
+      }
+    }
+  },
+  "events": [
+    {
+      "type": "traffic_spike",
+      "at_s": 320400,
+      "duration_s": 21600,
+      "rate_multiplier": 3.0
+    },
+    {
+      "type": "fleet_shock",
+      "at_s": 320400,
+      "duration_s": 7200,
+      "factor_id": "eea-issuer-net",
+      "magnitude": 1.8
+    },
+    {
+      "type": "gradual_overload",
+      "at_s": 320400,
+      "target": "delta",
+      "ramp_s": 5400,
+      "auth_multiplier_to": 0.86,
+      "latency_multiplier_to": 3.0
+    },
+    {
+      "type": "recovery",
+      "at_s": 331200,
+      "target": "delta",
+      "curve": "exponential",
+      "tau_s": 1800,
+      "auth_multiplier_from": 0.86,
+      "latency_multiplier_from": 3.0
+    }
+  ],
+  "recording": {
+    "mode": "all_arms",
+    "trace_path": "data/traces/black-friday-degraded-v1"
+  }
+}

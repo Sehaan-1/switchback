@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0.0",
+  "id": "outage-recovery-v1",
+  "title": "Three outages, three failure modes, three recovery curves",
+  "description": "The point of this scenario is that 'an acquirer went down' is at least three different events and a benchmark that ran only one of them has tested one third of the logic. timeout leaves the result UNKNOWN (#10's double-charge case); connection_refused is a fast, certain error with the same routing consequence and none of the ambiguity; decline_storm is not an outage at all from the engine's side -- the acquirer is up, answering, and every answer is a soft decline, which is exactly the case a health model that only counts timeouts gets wrong. The recoveries differ the same way: step, exponential (tau 900s), linear.",
+  "extends": "baseline-steady-v1",
+  "events": [
+    {
+      "type": "outage",
+      "at_s": 172800,
+      "target": "alpha",
+      "duration_s": 900,
+      "failure_mode": "timeout"
+    },
+    {
+      "type": "recovery",
+      "at_s": 173700,
+      "target": "alpha",
+      "curve": "exponential",
+      "tau_s": 900,
+      "latency_multiplier_from": 2.0
+    },
+    {
+      "type": "outage",
+      "at_s": 345600,
+      "target": "foxtrot",
+      "duration_s": 600,
+      "failure_mode": "connection_refused"
+    },
+    {
+      "type": "recovery",
+      "at_s": 346200,
+      "target": "foxtrot",
+      "curve": "step"
+    },
+    {
+      "type": "outage",
+      "at_s": 432000,
+      "target": "echo",
+      "duration_s": 1200,
+      "failure_mode": "decline_storm",
+      "auth_multiplier": 0.02
+    },
+    {
+      "type": "recovery",
+      "at_s": 433200,
+      "target": "echo",
+      "curve": "linear",
+      "duration_s": 1800,
+      "auth_multiplier_from": 0.02,
+      "latency_multiplier_from": 1.4
+    }
+  ],
+  "recording": {
+    "mode": "all_arms",
+    "trace_path": "data/traces/outage-recovery-v1"
+  }
+}

@@ -26,14 +26,25 @@ Decided so far:
 - [ConstraintSet: a closed-vocabulary document, filtered before sampling, with the census,
   precedence and audit record that go with it](docs/decisions/0004-constraint-layer.md)
   ([#5](https://github.com/Sehaan-1/switchback/issues/5))
+- [Simulation harness: one processor interface, scenarios as content-addressed documents,
+  key-derived determinism](docs/decisions/0005-simulation-harness.md)
+  ([#6](https://github.com/Sehaan-1/switchback/issues/6))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
 spikes/             small, reproducible probes that back a decision (not implementation)
 constraints/        the ConstraintSet schema, the rule catalog, the examples and the gate over them
+simulator/          the scenario schema, the worked scenarios, the golden files and the gate over them
 ```
 
 Implementation (engine, simulator, dashboard, benchmarks) starts after the map is complete.
 Evidence for a decision lives next to it: see
 [`spikes/0001-latency-budget/`](spikes/0001-latency-budget/) for the hot-path probe behind
-ADR-0001, which regenerates its own committed results.
+ADR-0001, and [`spikes/0006-simulation-harness/`](spikes/0006-simulation-harness/) for the
+working reference harness behind ADR-0005 — each regenerates its own committed results.
+
+Two directories are artifacts rather than prose, and both are gated by a dependency-free
+checker that runs in CI and refuses a document that should not exist:
+[`constraints/`](constraints/) for the merchant's ConstraintSet, and
+[`simulator/scenarios/`](simulator/scenarios/) for the world a benchmark runs in. A number
+in this repository is cited against a scenario hash, not a filename.

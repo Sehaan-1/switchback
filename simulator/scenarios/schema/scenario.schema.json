@@ -1,0 +1,918 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://switchback.dev/schema/scenario/v1.0.0",
+  "title": "Switchback simulation scenario",
+  "description": "A complete, self-contained description of one simulation run: the fleet's behaviour model, the traffic presented to it, the events that disturb it, and what gets recorded. A scenario is data, validated against this schema, canonicalised and content-addressed (ADR-0005 §3). Nothing here is code and nothing here may read the environment: a scenario that hashes to the same bytes must produce the same bytes of trace on any machine, in any language, in any year. The acquirer *catalog* referenced by `fleet.catalog` is a separate artifact (see constraints/catalog/) and is pinned by hash, exactly as a ConstraintSet pins it.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "model_version",
+    "seed",
+    "clock",
+    "source",
+    "fleet",
+    "recording"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "description": "Grammar version. Bumped only by a change to this file."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{2,63}$",
+      "description": "Stable, unique, lowercase. Appears in every trace row and every benchmark table, so it is part of the citation of a number, not a filename."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "model_version": {
+      "type": "string",
+      "enum": [
+        "fleet-v1"
+      ],
+      "description": "The behavioural contract of the acquirer model: which random draws exist, in what order they are addressed, and what the parameters mean. Bumping this invalidates every committed benchmark number, which is the point."
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991,
+      "description": "Master seed. Every random value is derived from (seed, stream key, draw index) — see ADR-0005 §4. It is an integer, never a string, so that derivation is a fixed-width integer mix in every language."
+    },
+    "extends": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{2,63}$",
+      "description": "Optional single-parent inheritance: this document is deep-merged over the named scenario, then `extends` is stripped and the RESOLVED document is what gets hashed. An extension may not change `seed` or `model_version` (SV2)."
+    },
+    "clock": {
+      "$ref": "#/$defs/clock"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "fleet": {
+      "$ref": "#/$defs/fleet"
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/event"
+      },
+      "description": "Scheduled disturbances in virtual time. Ordered by (at_s, array index) at run time; document order is not significant."
+    },
+    "recording": {
+      "$ref": "#/$defs/recording"
+    }
+  },
+  "$defs": {
+    "clock": {
+      "type": "object",
+      "description": "Virtual time. The harness never sleeps: simulated latency is arithmetic on this clock, which is why a 30-day scenario can run in seconds.",
+      "required": [
+        "start",
+        "duration_s",
+        "resolution_ms"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+          "description": "UTC, 'Z' literal. No local time: a scenario that shifted with the runner's timezone would not be a scenario."
+        },
+        "duration_s": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 315360000
+        },
+        "resolution_ms": {
+          "type": "integer",
+          "enum": [
+            1,
+            5,
+            10,
+            50,
+            100
+          ],
+          "description": "Tick size of the virtual clock. Coarser ticks are faster and hide sub-tick ordering; 1 ms is the default and the only value a committed benchmark may use."
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "description": "Where transactions come from. Synthetic: generated from `traffic`. Trace: replayed from a recording (#13's export). Both are replayable; only the second replays reality.",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "synthetic",
+            "trace"
+          ]
+        },
+        "traffic": {
+          "$ref": "#/$defs/traffic"
+        },
+        "trace": {
+          "$ref": "#/$defs/traceSource"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "traffic"
+          ],
+          "properties": {
+            "kind": {
+              "const": "synthetic"
+            },
+            "traffic": {
+              "$ref": "#/$defs/traffic"
+            }
+          }
+        },
+        {
+          "required": [
+            "trace"
+          ],
+          "properties": {
+            "kind": {
+              "const": "trace"
+            },
+            "trace": {
+              "$ref": "#/$defs/traceSource"
+            }
+          }
+        }
+      ]
+    },
+    "traffic": {
+      "type": "object",
+      "required": [
+        "arrivals",
+        "context_mix"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "arrivals": {
+          "type": "object",
+          "required": [
+            "model",
+            "rate_tps"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "model": {
+              "enum": [
+                "poisson",
+                "fixed"
+              ],
+              "description": "poisson: exponential inter-arrival draws, index-addressed so the i-th arrival is the same in any run. fixed: deterministic 1/rate spacing (faster; aliases against the diurnal pattern, so it is for micro-benchmarks only)."
+            },
+            "rate_tps": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1000000
+            },
+            "congestion_coefficient": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2,
+              "description": "How much of an arrival-rate increase shows up as fleet-wide latency: lat_mult *= 1 + congestion_coefficient * (rate(t)/nominal - 1). Zero means a traffic spike that slows nobody down, which is not what a traffic spike does. Model constant of fleet-v1, exposed per scenario because it is the knob that decides whether 'Black Friday' means more transactions or worse transactions."
+            },
+            "diurnal": {
+              "$ref": "#/$defs/diurnal"
+            }
+          }
+        },
+        "context_mix": {
+          "$ref": "#/$defs/contextMix"
+        }
+      }
+    },
+    "diurnal": {
+      "type": "object",
+      "description": "Deterministic closed-form load shape. Analytic on purpose: a diurnal pattern drawn from the PRNG would be a second, correlated source of variation nobody could predict from the document.",
+      "required": [
+        "model",
+        "amplitude",
+        "peak_hour"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "const": "sinusoidal"
+        },
+        "amplitude": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "peak_hour": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 24
+        }
+      }
+    },
+    "contextMix": {
+      "type": "object",
+      "description": "The joint context distribution the harness samples. Keys are the fields ADR-0004's predicates read, so a scenario cannot under-specify a document the engine will be graded on.",
+      "required": [
+        "bin_class",
+        "region",
+        "merchant_category",
+        "route_class",
+        "amount"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "bin_class": {
+          "$ref": "#/$defs/weights"
+        },
+        "region": {
+          "$ref": "#/$defs/weights"
+        },
+        "merchant_category": {
+          "$ref": "#/$defs/weights"
+        },
+        "route_class": {
+          "$ref": "#/$defs/weights"
+        },
+        "entry_mode": {
+          "$ref": "#/$defs/weights"
+        },
+        "mandate_share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "sca_exemption_share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Share of SCA-applicable traffic that arrives with acceptable exemption evidence (#11 owns the estimate; the harness only needs it to generate the field)."
+        },
+        "amount": {
+          "type": "object",
+          "required": [
+            "model",
+            "median_minor",
+            "sigma",
+            "min_minor",
+            "max_minor"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "model": {
+              "const": "lognormal"
+            },
+            "median_minor": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sigma": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 5
+            },
+            "min_minor": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "max_minor": {
+              "type": "integer",
+              "minimum": 2
+            }
+          }
+        },
+        "deadline_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 600000,
+          "description": "The request's deadline. Fixed per scenario unless a benchmark is specifically about deadline sensitivity."
+        }
+      }
+    },
+    "weights": {
+      "type": "object",
+      "description": "Categorical distribution. Keys are closed per field (SV7); values are non-negative and at least one is positive. Need not sum to 1 — the checker normalises, and the document stays readable.",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "number",
+        "minimum": 0
+      }
+    },
+    "traceSource": {
+      "type": "object",
+      "description": "Replay of a recorded stream (#13's Parquet export). A trace supplies contexts and attempt keys; outcomes come from the same key-derived streams as a synthetic run, which is what makes a counterfactual on a real event reproducible.",
+      "required": [
+        "path",
+        "format",
+        "context_fields"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/-]+$",
+          "description": "Repo-relative. Absolute paths and '..' are rejected (SV9): a benchmark must run anywhere."
+        },
+        "format": {
+          "enum": [
+            "parquet",
+            "jsonl"
+          ]
+        },
+        "row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "content_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "context_fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "description": "The fields the trace actually carries. Anything absent must be modelled, and the ADR-0005 §5 finding is that the cost of an absent field is measurable and large."
+        }
+      }
+    },
+    "fleet": {
+      "type": "object",
+      "required": [
+        "catalog",
+        "catalog_hash",
+        "acquirers"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "catalog": {
+          "type": "string",
+          "description": "Path to the acquirer capability/economics catalog this fleet is described against (constraints/catalog/*.json). Capability and price are catalog facts, not scenario parameters."
+        },
+        "catalog_hash": {
+          "$ref": "#/$defs/hash",
+          "description": "Content hash of the catalog, in the same canonical form as a ConstraintSet's policy.catalog_hash. Scenario and fleet move together or the scenario does not run (SV3)."
+        },
+        "acquirers": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/acquirer"
+          },
+          "description": "Keyed by acquirer id. Keys must exist in the catalog (SV3). The KEY SET is part of the world: adding an acquirer must not perturb any other stream (measured in [M3])."
+        },
+        "correlation": {
+          "$ref": "#/$defs/correlation"
+        }
+      }
+    },
+    "acquirer": {
+      "type": "object",
+      "description": "The behaviour of one synthetic acquirer. Every field is a parameter of a model, never a canned answer: the engine learns these rates from data it is given, exactly as it would in production.",
+      "required": [
+        "auth",
+        "decline_mix",
+        "latency",
+        "three_ds"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "auth": {
+          "$ref": "#/$defs/auth"
+        },
+        "decline_mix": {
+          "$ref": "#/$defs/declineMix"
+        },
+        "latency": {
+          "$ref": "#/$defs/latency"
+        },
+        "three_ds": {
+          "$ref": "#/$defs/threeDS"
+        },
+        "late_settlement": {
+          "$ref": "#/$defs/lateSettlement"
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "required": [
+        "base_rate"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "base_rate": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "description": "P(issuer approves | reached, no challenge) for the reference context (consumer_credit, EEA, median ticket)."
+        },
+        "bin_class_multiplier": {
+          "$ref": "#/$defs/multipliers"
+        },
+        "region_multiplier": {
+          "$ref": "#/$defs/multipliers"
+        },
+        "amount_sensitivity": {
+          "type": "object",
+          "description": "Large tickets are declined more (issuer risk models) and tiny tickets slightly more too (fixed-fee economics, issuer floor rules). Two-kink linear, capped.",
+          "required": [
+            "kink_minor",
+            "slope_per_10k_minor",
+            "cap"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kink_minor": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "slope_per_10k_minor": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "cap": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "multipliers": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "maximum": 4
+      },
+      "description": "Per-key multiplicative adjustment. Keys are closed per field (SV7)."
+    },
+    "declineMix": {
+      "type": "object",
+      "description": "Distribution over decline codes, conditional on a decline. Weights need not sum to 1. Whether a code is RETRYABLE is a scheme fact from the catalog, not a scenario parameter (SV4) — a scenario may not declare a hard decline soft.",
+      "required": [
+        "scheme",
+        "weights"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "scheme": {
+          "enum": [
+            "iso8583",
+            "nacha"
+          ],
+          "description": "iso8583 = card authorization response codes (51, 05, 14, ...). nacha = ACH return codes (R01, R03, R12, ...). The ticket's R01/R03/R12 are nacha; the card path is iso8583. Both are supported because the scheme changes the CATALOG, not the model."
+        },
+        "weights": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        }
+      }
+    },
+    "latency": {
+      "type": "object",
+      "description": "Quantile-parameterised latency: a lognormal body fitted through (p50, p95) with a generalised-Pareto tail above p95 pinned to p99 (ADR-0005 §2). Three quantiles and a tail index, not a distribution name — the point is that a scenario author thinks in the numbers they would see on a dashboard.",
+      "required": [
+        "model",
+        "p50_ms",
+        "p95_ms",
+        "p99_ms",
+        "floor_ms"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "const": "lognormal_gpd"
+        },
+        "p50_ms": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "p95_ms": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "p99_ms": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "floor_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Network floor: no response is faster than this. Also keeps the body model from producing sub-RTT latencies at extreme draws."
+        },
+        "tail_index": {
+          "type": "number",
+          "default": 0.25,
+          "minimum": 0.05,
+          "maximum": 0.6,
+          "description": "Generalised-Pareto shape ξ. Higher = heavier tail. p99.9 is a MODEL OUTPUT of this parameter, not an input — see [M4], where it moves 3x between tail models that agree at p99."
+        }
+      }
+    },
+    "threeDS": {
+      "type": "object",
+      "description": "3DS flow quality. `frictionless_rate` is P(no challenge | authentication attempted); the abandonment rate applies to challenged transactions and feeds the `abandoned` outcome (#11 owns the real estimates).",
+      "required": [
+        "frictionless_rate",
+        "challenge_abandon_rate"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "frictionless_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "challenge_abandon_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "bin_class_multiplier": {
+          "$ref": "#/$defs/multipliers"
+        },
+        "merchant_category_multiplier": {
+          "$ref": "#/$defs/multipliers"
+        },
+        "liability_shift_uplift": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 2,
+          "description": "Multiplier on approval probability when a challenge was COMPLETED (issuer risk models approve more once authenticated). Applied to the challenged branch only."
+        }
+      }
+    },
+    "lateSettlement": {
+      "type": "object",
+      "description": "The 'up but slow' case (#10): an attempt the engine gave up on can still be authorized by the issuer later. The harness emits it as a scheduled event on the virtual clock, which is the only way the engine's lease logic can be tested at all.",
+      "required": [
+        "share",
+        "delay"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "P(the issuer's decision eventually arrives | attempt exceeded the deadline)."
+        },
+        "delay": {
+          "type": "object",
+          "required": [
+            "median_s",
+            "sigma"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "median_s": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "sigma": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 5
+            }
+          }
+        }
+      }
+    },
+    "correlation": {
+      "type": "object",
+      "description": "Latent factors that couple acquirers. Without them a fleet-wide event is simulated as N independent events, which is not what a processor outage looks like.",
+      "required": [
+        "factors"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "factors": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "acquirers",
+              "weight",
+              "model",
+              "rho",
+              "bucket_s"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+              },
+              "acquirers": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "string"
+                },
+                "description": "Two or more members (SV8): a factor with one member is not correlation, it is a typo."
+              },
+              "weight": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1
+              },
+              "model": {
+                "const": "ar1"
+              },
+              "rho": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.999
+              },
+              "bucket_s": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 86400,
+                "description": "Width of the latent-factor time bucket. The factor is constant within a bucket and AR(1) across buckets."
+              }
+            }
+          }
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "description": "A scheduled disturbance. `type` discriminates.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/gradualOverload"
+        },
+        {
+          "$ref": "#/$defs/outage"
+        },
+        {
+          "$ref": "#/$defs/recovery"
+        },
+        {
+          "$ref": "#/$defs/trafficSpike"
+        },
+        {
+          "$ref": "#/$defs/fleetShock"
+        }
+      ]
+    },
+    "gradualOverload": {
+      "type": "object",
+      "required": [
+        "type",
+        "at_s",
+        "target",
+        "ramp_s",
+        "auth_multiplier_to",
+        "latency_multiplier_to"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "gradual_overload"
+        },
+        "at_s": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": {
+          "type": "string"
+        },
+        "ramp_s": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Linear ramp from nominal to the target multipliers. Gradual is the hard case: a step change is detectable by any detector, a ramp is detectable only by one that knows what it is looking for (#8)."
+        },
+        "auth_multiplier_to": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "latency_multiplier_to": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 50
+        }
+      }
+    },
+    "outage": {
+      "type": "object",
+      "description": "A sudden failure. `failure_mode` is the whole point: an engine that handles `timeout` correctly can still be wrong about `connection_refused`, because only the first leaves the result unknown (#10).",
+      "required": [
+        "type",
+        "at_s",
+        "target",
+        "duration_s",
+        "failure_mode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "outage"
+        },
+        "at_s": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": {
+          "type": "string"
+        },
+        "duration_s": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "failure_mode": {
+          "enum": [
+            "timeout",
+            "connection_refused",
+            "http_503",
+            "decline_storm"
+          ],
+          "description": "timeout: the socket hangs past the deadline, outcome UNKNOWN. connection_refused / http_503: a fast, certain error. decline_storm: the acquirer is up and answering, but everything comes back as a soft decline — indistinguishable from the issuer, and the case a naive health model gets wrong."
+        },
+        "auth_multiplier": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "description": "Approval-rate multiplier during the event; only meaningful for decline_storm (a refused connection never reaches an issuer). Default 0.02."
+        }
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "description": "What happens after degradation. A step recovery is the assumption that makes a benchmark optimistic: the arm is clean the instant the event ends, so a router that returns to it early is never punished.",
+      "required": [
+        "type",
+        "at_s",
+        "target",
+        "curve"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "recovery"
+        },
+        "at_s": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": {
+          "type": "string"
+        },
+        "curve": {
+          "enum": [
+            "step",
+            "exponential",
+            "linear"
+          ]
+        },
+        "tau_s": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Time constant for the exponential curve. Required when curve == exponential (SV6)."
+        },
+        "duration_s": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Required when curve == linear (SV6)."
+        },
+        "auth_multiplier_from": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "description": "The approval-rate multiplier the acquirer is recovering FROM. Default 1.0 = no auth effect."
+        },
+        "latency_multiplier_from": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 50,
+          "description": "The latency multiplier it is recovering from. An acquirer that comes back from an outage is slow before it is clean; stating the residual is the author's job, not the model's default (SV6)."
+        }
+      }
+    },
+    "trafficSpike": {
+      "type": "object",
+      "required": [
+        "type",
+        "at_s",
+        "duration_s",
+        "rate_multiplier"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "traffic_spike"
+        },
+        "at_s": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_s": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rate_multiplier": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "fleetShock": {
+      "type": "object",
+      "description": "A displacement of a latent factor: the mechanism behind 'correlated spikes' that are not any single acquirer's fault (a network event, a scheme outage, a regional DNS failure).",
+      "required": [
+        "type",
+        "at_s",
+        "duration_s",
+        "factor_id",
+        "magnitude"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "fleet_shock"
+        },
+        "at_s": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_s": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "factor_id": {
+          "type": "string"
+        },
+        "magnitude": {
+          "type": "number",
+          "minimum": -6,
+          "maximum": 6,
+          "description": "Shift of the latent factor, in standard deviations of its stationary distribution."
+        }
+      }
+    },
+    "recording": {
+      "type": "object",
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "chosen_only",
+            "all_arms"
+          ],
+          "description": "chosen_only: record the arms the policy actually called (what production can record). all_arms: record the outcome for EVERY acquirer the policy could have called (what a synthetic harness can record, and what #15's counterfactual needs). The cost difference is measured in [M7]; the bias difference is measured in [M8]."
+        },
+        "trace_path": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._/-]*$"
+        },
+        "context_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Which context fields to persist. Default (absent) = all, because a field you did not record is a field you have to model later — [M8] prices that."
+        },
+        "late_settlement_window_s": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 604800
+        }
+      }
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

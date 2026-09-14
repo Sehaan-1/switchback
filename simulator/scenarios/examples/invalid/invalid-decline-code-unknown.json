@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0.0",
+  "id": "invalid-decline-code-unknown",
+  "title": "Negative fixture: a decline code the scheme does not have",
+  "description": "MUST be rejected. A scenario invents FREQUENCIES; codes, and above all whether a code is retryable, are scheme facts from the catalog. A document that declares code 'ZZ' retryable would let a benchmark be tuned by inventing decline reasons that no issuer sends -- and the retryability flag is the one that decides whether the engine spends an attempt.",
+  "model_version": "fleet-v1",
+  "seed": 1,
+  "clock": {
+    "start": "2026-09-01T00:00:00Z",
+    "duration_s": 3600,
+    "resolution_ms": 1
+  },
+  "source": {
+    "kind": "synthetic",
+    "traffic": {
+      "arrivals": {
+        "model": "fixed",
+        "rate_tps": 10.0
+      },
+      "context_mix": {
+        "bin_class": {
+          "consumer_credit": 100
+        },
+        "region": {
+          "EEA": 100
+        },
+        "merchant_category": {
+          "retail": 100
+        },
+        "route_class": {
+          "oneoff_cnp": 100
+        },
+        "amount": {
+          "model": "lognormal",
+          "median_minor": 4600,
+          "sigma": 0.95,
+          "min_minor": 600,
+          "max_minor": 400000
+        }
+      }
+    }
+  },
+  "fleet": {
+    "catalog": "constraints/catalog/acquirer-catalog.example.json",
+    "catalog_hash": "sha256:c8351da87a9496e835229849344d2da2195354939ea1f59f193c83e2b42a2b01",
+    "acquirers": {
+      "alpha": {
+        "auth": {
+          "base_rate": 0.915
+        },
+        "decline_mix": {
+          "scheme": "iso8583",
+          "weights": {
+            "51": 30,
+            "ZZ": 12,
+            "05": 10
+          }
+        },
+        "latency": {
+          "model": "lognormal_gpd",
+          "p50_ms": 190,
+          "p95_ms": 420,
+          "p99_ms": 640,
+          "floor_ms": 60,
+          "tail_index": 0.25
+        },
+        "three_ds": {
+          "frictionless_rate": 0.9,
+          "challenge_abandon_rate": 0.22
+        }
+      }
+    }
+  },
+  "events": [],
+  "recording": {
+    "mode": "chosen_only"
+  }
+}
