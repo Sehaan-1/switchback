@@ -1,0 +1,416 @@
+{
+  "schema_version": "1.0.0",
+  "id": "merchant.northwind.default",
+  "revision": 7,
+  "description": "Baseline ConstraintSet for Northwind Digital (EU-domiciled merchant, global card volume, floor margin 25 bps).",
+  "valid_from": "2026-09-01",
+  "scope": {
+    "kind": "merchant",
+    "merchant_id": "northwind",
+    "route_class": "all",
+    "layer_priority": 100
+  },
+  "precedence": {
+    "fixed_prefix": [
+      "regulatory",
+      "network"
+    ],
+    "order": [
+      "budget",
+      "econ",
+      "mandate"
+    ],
+    "tie_break": "strictest_first"
+  },
+  "fail_mode": {
+    "empty_eligible_set": "escalate",
+    "guard_trip": "deny_and_alert",
+    "missing_capability": "exclude",
+    "unknown_decline_category": "deny_reattempt",
+    "counter_unavailable": "deny"
+  },
+  "policy": {
+    "catalog_version": "acquirer-catalog-2026.09.1",
+    "catalog_hash": "c8351da87a9496e835229849344d2da2195354939ea1f59f193c83e2b42a2b01",
+    "processor_ids": [
+      "alpha",
+      "bravo",
+      "charlie",
+      "delta",
+      "echo",
+      "foxtrot"
+    ],
+    "acquirer_regions": [
+      "EEA",
+      "UK",
+      "US",
+      "LATAM",
+      "APAC"
+    ]
+  },
+  "regulatory": [
+    {
+      "id": "gdpr-eu-card-residency",
+      "rule": "regulatory.data_residency",
+      "rationale": "EU-issued cards are processed by EEA-established acquirers; the processor is an independent controller for our purposes and there is no transfer mechanism we are willing to rely on.",
+      "authority": {
+        "basis": "law",
+        "citation": "GDPR Art. 44-46; DPA review 2026-08-19, memo NRD-DPA-114",
+        "effective_from": "2021-06-01",
+        "note": "Region is read from the acquirer capability catalog, not guessed from the processor's brand."
+      },
+      "when": {
+        "field": "card_region",
+        "op": "eq",
+        "value": "EEA"
+      },
+      "params": {
+        "acquirer_regions": [
+          "EEA"
+        ],
+        "require_declared_capability": true,
+        "on_missing_capability": "exclude"
+      }
+    },
+    {
+      "id": "psd2-sca-eea-uk",
+      "rule": "regulatory.sca_required",
+      "rationale": "PSD2/RTS applies to EEA issuers; UK issuers are treated identically by our own policy even though we could argue otherwise post-Brexit.",
+      "authority": {
+        "basis": "law",
+        "citation": "PSD2 Art. 97; Commission Delegated Regulation (EU) 2018/389 Art. 13-18",
+        "note": "Exemption evidence is #11's analysis; this rule only decides whether the route must be 3DS-capable."
+      },
+      "when": {
+        "any": [
+          {
+            "field": "card_region",
+            "op": "eq",
+            "value": "EEA"
+          },
+          {
+            "field": "card_region",
+            "op": "eq",
+            "value": "UK"
+          }
+        ]
+      },
+      "params": {
+        "mode": "unless_exempt_evidence",
+        "allowed_exemptions": [
+          "low_value",
+          "tra",
+          "recurring_mit",
+          "mit_unscheduled",
+          "secure_corporate"
+        ],
+        "on_missing_evidence": "deny"
+      }
+    }
+  ],
+  "network": [
+    {
+      "id": "visa-reattempt-30d",
+      "rule": "network.reattempt_limit",
+      "rationale": "Visa's excessive-reattempt rule: no more than 15 reattempts of a declined transaction in a rolling 30-day window before per-attempt fees apply; category 1 declines may not be reattempted at all.",
+      "authority": {
+        "basis": "scheme_rule",
+        "citation": "Visa Core Rules & Product Rules, Excessive Reattempts (eff. April 2022); category codes per Visa decline category framework",
+        "note": "Counted per card, which is the conservative reading of a rule documented per transaction - see constraints/README.md 'counting keys'."
+      },
+      "after": {
+        "field": "decline_category",
+        "op": "in",
+        "value": [
+          2,
+          3
+        ]
+      },
+      "params": {
+        "window": "P30D",
+        "limit": 15,
+        "key": "card",
+        "applies_to_categories": [
+          2,
+          3
+        ],
+        "missing_category": "deny",
+        "max_per_day": 1,
+        "min_interval": "P1D",
+        "min_interval_basis": "scheme_guidance",
+        "counter": {
+          "kind": "ring",
+          "slots": 30,
+          "slot_width": "uint8"
+        }
+      }
+    },
+    {
+      "id": "visa-category-1-stop",
+      "rule": "network.hard_stop",
+      "rationale": "Category 1 is 'the issuer will never approve' - reattempting it is a fee with no upside, so the card is stopped for this merchant rather than the transaction.",
+      "authority": {
+        "basis": "scheme_rule",
+        "citation": "Visa decline category code 1"
+      },
+      "after": {
+        "field": "decline_category",
+        "op": "eq",
+        "value": 1
+      },
+      "params": {
+        "triggers": [
+          {
+            "kind": "decline_category",
+            "values": [
+              "1"
+            ]
+          }
+        ],
+        "scope": "card"
+      }
+    },
+    {
+      "id": "mc-mac-schedule",
+      "rule": "network.retry_schedule",
+      "rationale": "Mastercard merchant advice codes tell us when to try again (MAC 24-30); ignoring a code that says 'do not try again' costs $0.10 per attempt, and ignoring a timed code wastes the attempt.",
+      "authority": {
+        "basis": "scheme_rule",
+        "citation": "Mastercard Transaction Processing Excellence, Merchant Advice Codes (MAC 02/03/21/24-30)"
+      },
+      "after": {
+        "field": "merchant_advice_code",
+        "op": "exists"
+      },
+      "params": {
+        "source": "merchant_advice_code",
+        "schedule": [
+          "PT1H",
+          "P1D",
+          "P2D",
+          "P4D",
+          "P6D",
+          "P8D",
+          "P10D"
+        ],
+        "default_interval": "P1D",
+        "fallback_after_schedule": "stop"
+      }
+    }
+  ],
+  "budget": [
+    {
+      "id": "card-auth-cap-24h",
+      "rule": "budget.attempt_cap",
+      "rationale": "Acquirer-side velocity complaints start at the second authorization attempt on the same card in a day; we cap ourselves below the limit where issuers begin treating our MID as abusive.",
+      "authority": {
+        "basis": "contract",
+        "citation": "Acquirer MSA schedule 3, retry-conduct clause"
+      },
+      "relaxable": {
+        "approved_by": "head-of-payments@northwind",
+        "approved_at": "2026-08-30T09:00:00Z",
+        "expires_at": "2026-12-31T00:00:00Z",
+        "reason": "Peak-season recovery window agreed with the acquirer; reviewed monthly against decline-reason mix.",
+        "scope": "traffic_share",
+        "max_traffic_share_bps": 250
+      },
+      "params": {
+        "limit": 5,
+        "window": "P1D",
+        "key": "card",
+        "counter": {
+          "kind": "ring",
+          "slots": 24,
+          "slot_width": "uint8"
+        },
+        "on_exceeded": "queue"
+      }
+    },
+    {
+      "id": "chain-depth-2",
+      "rule": "budget.chain_depth",
+      "rationale": "Two attempts per transaction. Every additional attempt has to beat the expected-value test on its own; the cap stops a chain from being justified by a chain.",
+      "authority": {
+        "basis": "policy"
+      },
+      "params": {
+        "limit": 2,
+        "ev_test_required": true
+      }
+    },
+    {
+      "id": "inflight-lease",
+      "rule": "budget.reservation",
+      "rationale": "An attempt that is in flight but unconfirmed reserves the card's budget slot; if the result never arrives the lease expires at the deadline so a late authorization cannot double-charge (#10).",
+      "authority": {
+        "basis": "policy"
+      },
+      "params": {
+        "key": "card",
+        "ttl": "deadline_ms",
+        "on_timeout": "expire"
+      }
+    }
+  ],
+  "mandate": [
+    {
+      "id": "3ds-above-250",
+      "rule": "mandate.require_3ds",
+      "rationale": "Above EUR 250 the liability shift is worth more than the friction: chargeback losses on large tickets exceed the measured conversion loss.",
+      "authority": {
+        "basis": "policy",
+        "note": "Business mandate, distinct from the PSD2 rule: it applies to non-EEA cards too."
+      },
+      "when": {
+        "field": "amount_minor",
+        "op": "gt",
+        "value": 25000
+      },
+      "params": {
+        "mode": "always"
+      }
+    },
+    {
+      "id": "corporate-deal-charlie",
+      "rule": "mandate.must_process",
+      "rationale": "Corporate-card volume is committed to charlie under the 2026 rate agreement; the commitment is measured monthly so a silent fallback is a commercial event.",
+      "authority": {
+        "basis": "contract",
+        "citation": "Charlie volume commitment, annex B"
+      },
+      "relaxable": {
+        "approved_by": "cfo@northwind",
+        "approved_at": "2026-06-01T12:00:00Z",
+        "expires_at": "2027-06-01T12:00:00Z",
+        "reason": "Monthly tolerance when charlie is degraded or out of the corporate-card market for the currency.",
+        "scope": "unbounded"
+      },
+      "when": {
+        "field": "bin_class",
+        "op": "eq",
+        "value": "corporate"
+      },
+      "params": {
+        "processors": [
+          "charlie"
+        ],
+        "if_unavailable": "fall_back"
+      }
+    },
+    {
+      "id": "echo-not-for-mit",
+      "rule": "mandate.exclude_processor",
+      "rationale": "Echo's MIT re-presentment duplicates attempts on mid-flight retries; excluded from recurring traffic only, which keeps the exclusion auditable and reversible.",
+      "authority": {
+        "basis": "policy"
+      },
+      "when": {
+        "field": "route_class",
+        "op": "eq",
+        "value": "recurring_mit"
+      },
+      "params": {
+        "processors": [
+          "echo"
+        ],
+        "expires_at": "2027-03-31T00:00:00Z"
+      }
+    }
+  ],
+  "econ": [
+    {
+      "id": "floor-margin-25",
+      "rule": "econ.floor_margin",
+      "rationale": "Platform margin floor of 25 bps. Evaluated on take_bps - cost_bps(route), which is the only margin that actually varies by route (ADR-0002 open question, resolved here as the platform reading).",
+      "authority": {
+        "basis": "policy"
+      },
+      "relaxable": {
+        "approved_by": "cfo@northwind",
+        "approved_at": "2026-01-15T08:00:00Z",
+        "expires_at": "2027-01-15T08:00:00Z",
+        "reason": "Permits a below-floor route when the alternative is a known-hard decline; bounded to a quarter of volume and alerted.",
+        "scope": "traffic_share",
+        "max_traffic_share_bps": 2500
+      },
+      "params": {
+        "basis": "platform_margin_bps",
+        "value_bps": 25,
+        "on_violation": "deny"
+      }
+    },
+    {
+      "id": "max-cost-400",
+      "rule": "econ.max_cost",
+      "rationale": "No route may cost more than 400 bps all-in; the bandit is free to trade margin for auth rate inside this envelope and not outside it.",
+      "authority": {
+        "basis": "policy"
+      },
+      "params": {
+        "value_bps": 400,
+        "include_fixed_fee": true,
+        "max_attempt_fee_minor": 60
+      }
+    }
+  ],
+  "preference": [
+    {
+      "id": "prefer-alpha",
+      "rule": "preference.rank",
+      "rationale": "Alpha holds the primary commercial agreement and is preferred where its eligible approval rate is within 15 bps of the best; the bandit decides inside that band.",
+      "authority": {
+        "basis": "contract"
+      },
+      "params": {
+        "processors": [
+          "alpha"
+        ],
+        "tier": 1,
+        "mode": "tie_break",
+        "tie_epsilon_bps": 15
+      }
+    },
+    {
+      "id": "backup-tier",
+      "rule": "preference.rank",
+      "rationale": "A second tier exists so a preference never makes a request unroutable: if tier 1 is ineligible the tier-2 set is used, and if that is empty the bandit sees every eligible arm.",
+      "authority": {
+        "basis": "policy"
+      },
+      "params": {
+        "processors": [
+          "bravo",
+          "delta"
+        ],
+        "tier": 2,
+        "mode": "tie_break",
+        "fallback": "all_eligible"
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "id": "pin-delta-once",
+      "rule": "mandate.must_process",
+      "rationale": "Support re-route of a specific stuck transaction onto delta after a manual reconciliation review.",
+      "issued_at": "2026-09-14T10:22:31Z",
+      "issued_by": "ops-console:j.raman",
+      "ttl": "PT15M",
+      "request_ref": "txn_01J8ZY3Q4K",
+      "params": {
+        "processors": [
+          "delta"
+        ],
+        "if_unavailable": "fail_closed"
+      }
+    }
+  ],
+  "audit": {
+    "explain": true,
+    "log_pass_trace": true,
+    "hash_algorithm": "sha256",
+    "chain": true,
+    "retention_days": 400
+  }
+}

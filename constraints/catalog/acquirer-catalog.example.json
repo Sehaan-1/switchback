@@ -1,0 +1,80 @@
+{
+  "catalog_version": "acquirer-catalog-2026.09.1",
+  "generated_at": "2026-09-01T00:00:00Z",
+  "description": "EXAMPLE capability catalog. ConstraintSets reference PROCESSOR IDS; whether a processor is legal for a route is a fact, and facts about acquirers do not belong in a merchant's policy document. This file is a fixture: it mirrors the six processors of spikes/0003-bandit-vs-table so that a constraint result and a reward result can be read side by side. In the implementation this is produced by onboarding and served from the state store (#13), hashed into every audit record.",
+  "currencies_note": "currencies = currencies the acquirer will settle in; markets = issuing regions accepted; three_ds = 3DS/EMV 3-D Secure flow available; acquirer_country/region drive domestic and residency rules.",
+  "acquirers": [
+    {
+      "id": "alpha",
+      "acquirer_region": "US",
+      "acquirer_country": "US",
+      "currencies": ["EUR", "USD"],
+      "markets": ["US", "EEA", "UK", "LATAM", "APAC"],
+      "three_ds": true,
+      "cost_bps": 95,
+      "fixed_fee_minor": 10,
+      "attempt_fee_minor": 6,
+      "lat_p99_ms": 640
+    },
+    {
+      "id": "bravo",
+      "acquirer_region": "EEA",
+      "acquirer_country": "IE",
+      "currencies": ["EUR", "USD"],
+      "markets": ["EEA", "UK", "US"],
+      "three_ds": true,
+      "cost_bps": 72,
+      "fixed_fee_minor": 10,
+      "attempt_fee_minor": 5,
+      "lat_p99_ms": 900
+    },
+    {
+      "id": "charlie",
+      "acquirer_region": "EEA",
+      "acquirer_country": "DE",
+      "currencies": ["EUR", "GBP"],
+      "markets": ["EEA", "UK"],
+      "three_ds": true,
+      "cost_bps": 64,
+      "fixed_fee_minor": 8,
+      "attempt_fee_minor": 4,
+      "lat_p99_ms": 1150
+    },
+    {
+      "id": "delta",
+      "acquirer_region": "EEA",
+      "acquirer_country": "NL",
+      "currencies": ["EUR", "USD"],
+      "markets": ["EEA", "UK", "US", "APAC"],
+      "three_ds": true,
+      "cost_bps": 110,
+      "fixed_fee_minor": 12,
+      "attempt_fee_minor": 7,
+      "lat_p99_ms": 520
+    },
+    {
+      "id": "echo",
+      "acquirer_region": "US",
+      "acquirer_country": "US",
+      "currencies": ["USD"],
+      "markets": ["US", "EEA", "APAC"],
+      "three_ds": false,
+      "cost_bps": 86,
+      "fixed_fee_minor": 9,
+      "attempt_fee_minor": 5,
+      "lat_p99_ms": 760
+    },
+    {
+      "id": "foxtrot",
+      "acquirer_region": "EEA",
+      "acquirer_country": "ES",
+      "currencies": ["EUR", "USD"],
+      "markets": ["EEA", "US", "LATAM", "APAC"],
+      "three_ds": true,
+      "cost_bps": 58,
+      "fixed_fee_minor": 25,
+      "attempt_fee_minor": 9,
+      "lat_p99_ms": 1750
+    }
+  ]
+}

@@ -47,3 +47,4 @@ House rules:
 | [0001](0001-engine-language-go.md) | Lock Go for the routing engine core; Python is a cold-path language | [#2](https://github.com/Sehaan-1/switchback/issues/2) | Accepted |
 | [0002](0002-reward-function.md) | Two-part reward: end-to-end Bernoulli label, priced ambiguity, no 3DS multiplier | [#4](https://github.com/Sehaan-1/switchback/issues/4) | Accepted |
 | [0003](0003-bandit-not-static-table.md) | Routing algorithm: stochastic bandit, Beta-Bernoulli Thompson sampling, not a static table | [#3](https://github.com/Sehaan-1/switchback/issues/3) | Accepted |
+| [0004](0004-constraint-layer.md) | ConstraintSet: a closed-vocabulary document, filtered before sampling | [#5](https://github.com/Sehaan-1/switchback/issues/5) | Accepted |

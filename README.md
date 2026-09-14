@@ -23,10 +23,14 @@ Decided so far:
 - [Routing algorithm: stochastic bandit with Beta-Bernoulli Thompson sampling, not a
   static table](docs/decisions/0003-bandit-not-static-table.md)
   ([#3](https://github.com/Sehaan-1/switchback/issues/3))
+- [ConstraintSet: a closed-vocabulary document, filtered before sampling, with the census,
+  precedence and audit record that go with it](docs/decisions/0004-constraint-layer.md)
+  ([#5](https://github.com/Sehaan-1/switchback/issues/5))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
 spikes/             small, reproducible probes that back a decision (not implementation)
+constraints/        the ConstraintSet schema, the rule catalog, the examples and the gate over them
 ```
 
 Implementation (engine, simulator, dashboard, benchmarks) starts after the map is complete.
