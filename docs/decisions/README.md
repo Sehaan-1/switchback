@@ -49,3 +49,4 @@ House rules:
 | [0003](0003-bandit-not-static-table.md) | Routing algorithm: stochastic bandit, Beta-Bernoulli Thompson sampling, not a static table | [#3](https://github.com/Sehaan-1/switchback/issues/3) | Accepted |
 | [0004](0004-constraint-layer.md) | ConstraintSet: a closed-vocabulary document, filtered before sampling | [#5](https://github.com/Sehaan-1/switchback/issues/5) | Accepted |
 | [0005](0005-simulation-harness.md) | Simulation harness: one processor interface, scenarios as content-addressed documents, key-derived determinism | [#6](https://github.com/Sehaan-1/switchback/issues/6) | Accepted |
+| [0006](0006-thompson-sampling-implementation.md) | Thompson sampling implementation: arm space, update protocol, hot path, concurrency, cold start, persistence | [#7](https://github.com/Sehaan-1/switchback/issues/7) | Accepted |

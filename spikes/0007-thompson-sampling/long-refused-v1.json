@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "id": "long-refused-v1",
+  "title": "A six-hour connection-refused outage on the budget acquirer",
+  "description": "Spike-local scenario for #7's transport-error labeling question. outage-recovery-v1 expresses a connection_refused outage but only for 600 s (~120 transactions at benchmark scale): too short for the posterior to react, so the labeling choice cannot be measured there. This document extends baseline-steady-v1 with one long refusal -- six hours, the 'the PSP is down and its status page is yellow' case -- followed by a step recovery. It is a real scenario document: it resolves against baseline-steady-v1, passes the same gate (SV0-SV10), and hashes like any other; it lives in the spike because it is evidence for #7, not a fixture for #17.",
+  "extends": "baseline-steady-v1",
+  "events": [
+    {
+      "type": "outage",
+      "at_s": 172800,
+      "target": "foxtrot",
+      "duration_s": 21600,
+      "failure_mode": "connection_refused"
+    },
+    {
+      "type": "recovery",
+      "at_s": 194400,
+      "target": "foxtrot",
+      "curve": "step"
+    }
+  ],
+  "recording": {
+    "mode": "all_arms",
+    "trace_path": "data/traces/long-refused-v1"
+  }
+}
