@@ -29,6 +29,9 @@ Decided so far:
 - [Simulation harness: one processor interface, scenarios as content-addressed documents,
   key-derived determinism](docs/decisions/0005-simulation-harness.md)
   ([#6](https://github.com/Sehaan-1/switchback/issues/6))
+- [Thompson sampling implementation: arm space, update protocol, hot path, concurrency,
+  cold start, persistence](docs/decisions/0006-thompson-sampling-implementation.md)
+  ([#7](https://github.com/Sehaan-1/switchback/issues/7))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
@@ -40,8 +43,10 @@ simulator/          the scenario schema, the worked scenarios, the golden files 
 Implementation (engine, simulator, dashboard, benchmarks) starts after the map is complete.
 Evidence for a decision lives next to it: see
 [`spikes/0001-latency-budget/`](spikes/0001-latency-budget/) for the hot-path probe behind
-ADR-0001, and [`spikes/0006-simulation-harness/`](spikes/0006-simulation-harness/) for the
-working reference harness behind ADR-0005 — each regenerates its own committed results.
+ADR-0001, [`spikes/0006-simulation-harness/`](spikes/0006-simulation-harness/) for the
+working reference harness behind ADR-0005, and
+[`spikes/0007-thompson-sampling/`](spikes/0007-thompson-sampling/) for the implementation
+evidence behind ADR-0006 — each regenerates its own committed results.
 
 Two directories are artifacts rather than prose, and both are gated by a dependency-free
 checker that runs in CI and refuses a document that should not exist:
