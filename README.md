@@ -35,6 +35,9 @@ Decided so far:
 - [Drift detection: ADWIN at processor level, tiered decay, and onboarding exploration floor]
   (docs/decisions/0007-drift-detection.md)
   ([#8](https://github.com/Sehaan-1/switchback/issues/8))
+- [Censored data and exploration: bandit feedback scope, no standing forced exploration,
+  DECISION_LOG v1, delayed outcomes](docs/decisions/0008-censored-exploration.md)
+  ([#9](https://github.com/Sehaan-1/switchback/issues/9))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
@@ -51,7 +54,10 @@ working reference harness behind ADR-0005,
 [`spikes/0007-thompson-sampling/`](spikes/0007-thompson-sampling/) for the implementation
 evidence behind ADR-0006, and
 [`spikes/0008-drift-detection/`](spikes/0008-drift-detection/) for the drift detection
-evidence behind ADR-0007 — each regenerates its own committed results.
+evidence behind ADR-0007, and
+[`spikes/0009-censored-exploration/`](spikes/0009-censored-exploration/) for the
+censored-feedback and exploration evidence behind ADR-0008 — each regenerates its own
+committed results.
 
 Two directories are artifacts rather than prose, and both are gated by a dependency-free
 checker that runs in CI and refuses a document that should not exist:

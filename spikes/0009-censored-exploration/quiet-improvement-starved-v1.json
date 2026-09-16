@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "id": "quiet-improvement-starved-v1",
+  "title": "A written-off processor silently recovers, with no transport signature and no traffic",
+  "description": "Spike-local scenario for #9's censorship question, the boundary case: quiet-improvement-v1 keeps foxtrot at 0.806 effective during the observation window, which buys it ~9% of traffic -- enough observations for the processor-level drift detector to see the improvement. Here the observation window is much worse: foxtrot's declared base_rate is 0.92 but the first three days run at auth_multiplier 0.652, an effective 0.60, which Thompson sampling starves to a marginal share. The detector stream is then fed by a trickle of roughly 1% of traffic, and the step recovery at t=259200s is again silent: no outage, no transport errors, no latency change. The question this document answers: where is the brake line between 'probability matching keeps enough feed for the detector' and 'censorship is total' -- measured as detection lag in seconds and transactions versus the pre-event share, and whether the R49 onboarding floor is what re-feeds the stream once the alarm fires. It is a real scenario document: it resolves against baseline-steady-v1, passes the same gate (SV1-SV10), and hashes like any other; it lives in the spike because it is evidence for #9, not a fixture for #17.",
+  "extends": "baseline-steady-v1",
+  "fleet": {
+    "acquirers": {
+      "foxtrot": {
+        "auth": {
+          "base_rate": 0.92
+        }
+      }
+    }
+  },
+  "events": [
+    {
+      "type": "outage",
+      "at_s": 0,
+      "target": "foxtrot",
+      "duration_s": 259200,
+      "failure_mode": "decline_storm",
+      "auth_multiplier": 0.652
+    },
+    {
+      "type": "recovery",
+      "at_s": 259200,
+      "target": "foxtrot",
+      "curve": "step"
+    }
+  ]
+}
