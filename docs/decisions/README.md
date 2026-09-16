@@ -50,3 +50,4 @@ House rules:
 | [0004](0004-constraint-layer.md) | ConstraintSet: a closed-vocabulary document, filtered before sampling | [#5](https://github.com/Sehaan-1/switchback/issues/5) | Accepted |
 | [0005](0005-simulation-harness.md) | Simulation harness: one processor interface, scenarios as content-addressed documents, key-derived determinism | [#6](https://github.com/Sehaan-1/switchback/issues/6) | Accepted |
 | [0006](0006-thompson-sampling-implementation.md) | Thompson sampling implementation: arm space, update protocol, hot path, concurrency, cold start, persistence | [#7](https://github.com/Sehaan-1/switchback/issues/7) | Accepted |
+| [0007](0007-drift-detection.md) | Drift detection: ADWIN at processor level, tiered decay, and onboarding exploration floor | [#8](https://github.com/Sehaan-1/switchback/issues/8) | Accepted |
