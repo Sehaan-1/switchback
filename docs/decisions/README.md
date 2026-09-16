@@ -51,3 +51,4 @@ House rules:
 | [0005](0005-simulation-harness.md) | Simulation harness: one processor interface, scenarios as content-addressed documents, key-derived determinism | [#6](https://github.com/Sehaan-1/switchback/issues/6) | Accepted |
 | [0006](0006-thompson-sampling-implementation.md) | Thompson sampling implementation: arm space, update protocol, hot path, concurrency, cold start, persistence | [#7](https://github.com/Sehaan-1/switchback/issues/7) | Accepted |
 | [0007](0007-drift-detection.md) | Drift detection: ADWIN at processor level, tiered decay, and onboarding exploration floor | [#8](https://github.com/Sehaan-1/switchback/issues/8) | Accepted |
+| [0008](0008-censored-exploration.md) | Censored data and exploration: bandit feedback scope, no standing forced exploration, DECISION_LOG v1, delayed outcomes | [#9](https://github.com/Sehaan-1/switchback/issues/9) | Accepted |
