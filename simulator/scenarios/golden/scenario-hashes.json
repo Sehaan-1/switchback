@@ -1,7 +1,7 @@
 {
-  "baseline-steady-v1": "sha256:16661ded41ddf86b195eacecfcc44bf263a93efe753d71cc73dc56614d76f732",
-  "black-friday-degraded-v1": "sha256:7e939d9d908a4808c3c4dd15e91491b58441f51169685fbe1c780108612bd1d7",
-  "idempotency-stress-v1": "sha256:14273698a329904f55169b50b737efafc81ae43e5fafe1869c2c716c2ffc1456",
-  "outage-recovery-v1": "sha256:7ccf8382441437099814c95c1cd9726e2850875260fabcdb15c6dbf7bb8fb711",
-  "replay-trace-v1": "sha256:681e449349a7e396f0e3aa98fbe3f291f9b8b6a28ed19dab57f709681f67a0a5"
+  "baseline-steady-v1": "sha256:b49193b7e715ab1755cb9207f0dd7e10bd7e8c40e963cd618b62d6bae176ac44",
+  "black-friday-degraded-v1": "sha256:89c669ee73716309de8d401a3e291922f5825f8712007b261028f0ea1157cc08",
+  "idempotency-stress-v1": "sha256:984db10a2af05755612ee84d0694b6bb8556bfdcdd4292f61e30a59c0d5dbbc9",
+  "outage-recovery-v1": "sha256:1e0cd5cd764e803763e35df946b2adfa4e0d4c11947add0a7e0cb4ae33f037a6",
+  "replay-trace-v1": "sha256:abdba21ec1e94527f4e3d933e4a38ad462203c08b2ff68f260044786a8c4b323"
 }

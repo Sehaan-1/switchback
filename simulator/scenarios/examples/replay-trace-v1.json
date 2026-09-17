@@ -37,7 +37,7 @@
   },
   "fleet": {
     "catalog": "constraints/catalog/acquirer-catalog.example.json",
-    "catalog_hash": "sha256:c8351da87a9496e835229849344d2da2195354939ea1f59f193c83e2b42a2b01",
+    "catalog_hash": "sha256:78b918123635684039f83d662520765634cef59321f1d141dd2b45087358c589",
     "acquirers": {
       "alpha": {
         "auth": {
