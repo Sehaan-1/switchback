@@ -38,6 +38,9 @@ Decided so far:
 - [Censored data and exploration: bandit feedback scope, no standing forced exploration,
   DECISION_LOG v1, delayed outcomes](docs/decisions/0008-censored-exploration.md)
   ([#9](https://github.com/Sehaan-1/switchback/issues/9))
+- [Idempotency and double-charge prevention: the lease, the idempotent resend, and
+  confirmed-terminal fallback](docs/decisions/0009-idempotency-double-charge.md)
+  ([#10](https://github.com/Sehaan-1/switchback/issues/10))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
@@ -52,11 +55,13 @@ Evidence for a decision lives next to it: see
 ADR-0001, [`spikes/0006-simulation-harness/`](spikes/0006-simulation-harness/) for the
 working reference harness behind ADR-0005,
 [`spikes/0007-thompson-sampling/`](spikes/0007-thompson-sampling/) for the implementation
-evidence behind ADR-0006, and
+evidence behind ADR-0006,
 [`spikes/0008-drift-detection/`](spikes/0008-drift-detection/) for the drift detection
-evidence behind ADR-0007, and
+evidence behind ADR-0007,
 [`spikes/0009-censored-exploration/`](spikes/0009-censored-exploration/) for the
-censored-feedback and exploration evidence behind ADR-0008 — each regenerates its own
+censored-feedback and exploration evidence behind ADR-0008, and
+[`spikes/0010-idempotency/`](spikes/0010-idempotency/) for the idempotency and
+double-charge prevention evidence behind ADR-0009 — each regenerates its own
 committed results.
 
 Two directories are artifacts rather than prose, and both are gated by a dependency-free

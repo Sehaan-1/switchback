@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0.0",
+  "id": "idempotency-stress-v1",
+  "title": "Up but slow: the workhorse degrades into the timeout failure mode",
+  "description": "The world #10's lease logic must be right about. charlie is the highest-volume arm (the cost table routes EEA/UK first to it), and it degrades in two stages: a gradual latency ramp, then a 12-minute outage in failure_mode timeout -- the socket answers, the deadline passes, and the result is UNKNOWN, which is the only mode that can produce a late authorization and therefore a double charge (ADR-0005 [M5]). Its late_settlement share is raised from the fleet's 0.3 to 0.6: the degraded processor keeps its record of more of its in-flight decisions, so more of its abandoned attempts settle later, which is exactly the exposure a retry-into-a-second-processor has to absorb. echo takes the contrast outage near the end of the window: connection_refused, a fast certain error with the same routing consequence and none of the money consequence. The two outages are separated in time and never overlap (SV6). The clock is shortened from the baseline's week to the one hour around the degradation: the lease logic is window-local, and the harness scales arrivals to fill the declared duration, so a 12-minute event is a fifth of the run instead of a hundred-thousandth of it.",
+  "extends": "baseline-steady-v1",
+  "clock": {
+    "start": "2026-09-01T00:00:00Z",
+    "duration_s": 3600,
+    "resolution_ms": 1
+  },
+  "fleet": {
+    "acquirers": {
+      "charlie": {
+        "late_settlement": {
+          "share": 0.6,
+          "delay": {
+            "median_s": 8.0,
+            "sigma": 0.9
+          }
+        }
+      }
+    }
+  },
+  "events": [
+    {
+      "type": "gradual_overload",
+      "at_s": 240,
+      "target": "charlie",
+      "ramp_s": 120,
+      "auth_multiplier_to": 0.95,
+      "latency_multiplier_to": 3.0
+    },
+    {
+      "type": "outage",
+      "at_s": 360,
+      "target": "charlie",
+      "duration_s": 720,
+      "failure_mode": "timeout"
+    },
+    {
+      "type": "recovery",
+      "at_s": 1080,
+      "target": "charlie",
+      "curve": "exponential",
+      "tau_s": 900,
+      "auth_multiplier_from": 0.95,
+      "latency_multiplier_from": 3.0
+    },
+    {
+      "type": "outage",
+      "at_s": 2100,
+      "target": "echo",
+      "duration_s": 600,
+      "failure_mode": "connection_refused"
+    },
+    {
+      "type": "recovery",
+      "at_s": 2700,
+      "target": "echo",
+      "curve": "step"
+    }
+  ],
+  "recording": {
+    "mode": "all_arms",
+    "trace_path": "data/traces/idempotency-stress-v1"
+  }
+}
