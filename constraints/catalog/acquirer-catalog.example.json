@@ -1,80 +1,143 @@
 {
-  "catalog_version": "acquirer-catalog-2026.09.1",
-  "generated_at": "2026-09-01T00:00:00Z",
-  "description": "EXAMPLE capability catalog. ConstraintSets reference PROCESSOR IDS; whether a processor is legal for a route is a fact, and facts about acquirers do not belong in a merchant's policy document. This file is a fixture: it mirrors the six processors of spikes/0003-bandit-vs-table so that a constraint result and a reward result can be read side by side. In the implementation this is produced by onboarding and served from the state store (#13), hashed into every audit record.",
+  "catalog_version": "acquirer-catalog-2026.09.2",
+  "generated_at": "2026-09-17T00:00:00Z",
+  "description": "EXAMPLE capability catalog. ConstraintSets reference PROCESSOR IDS; whether a processor is legal for a route is a fact, and facts about acquirers do not belong in a merchant's policy document. This file is a fixture: it mirrors the six processors of spikes/0003-bandit-vs-table so that a constraint result and a reward result can be read side by side. In the implementation this is produced by onboarding and served from the state store (#13), hashed into every audit record. 2026.09.2 adds the three contract facts ADR-0009 R66 and ADR-0010 R75 require and the 2026.09.1 fixture did not carry (max_response_ms, key_lifetime_ms, auth_fee_minor); ADR-0011 section 7 put that change in the ticket that first consumes the facts, with the scenario re-pin in the same PR (ADR-0012). Capability and economics are unchanged from 2026.09.1, so no result that depends only on those moves.",
   "currencies_note": "currencies = currencies the acquirer will settle in; markets = issuing regions accepted; three_ds = 3DS/EMV 3-D Secure flow available; acquirer_country/region drive domestic and residency rules.",
   "acquirers": [
     {
       "id": "alpha",
       "acquirer_region": "US",
       "acquirer_country": "US",
-      "currencies": ["EUR", "USD"],
-      "markets": ["US", "EEA", "UK", "LATAM", "APAC"],
+      "currencies": [
+        "EUR",
+        "USD"
+      ],
+      "markets": [
+        "US",
+        "EEA",
+        "UK",
+        "LATAM",
+        "APAC"
+      ],
       "three_ds": true,
       "cost_bps": 95,
       "fixed_fee_minor": 10,
       "attempt_fee_minor": 6,
-      "lat_p99_ms": 640
+      "lat_p99_ms": 640,
+      "max_response_ms": 4200,
+      "key_lifetime_ms": 86400000,
+      "auth_fee_minor": 2
     },
     {
       "id": "bravo",
       "acquirer_region": "EEA",
       "acquirer_country": "IE",
-      "currencies": ["EUR", "USD"],
-      "markets": ["EEA", "UK", "US"],
+      "currencies": [
+        "EUR",
+        "USD"
+      ],
+      "markets": [
+        "EEA",
+        "UK",
+        "US"
+      ],
       "three_ds": true,
       "cost_bps": 72,
       "fixed_fee_minor": 10,
       "attempt_fee_minor": 5,
-      "lat_p99_ms": 900
+      "lat_p99_ms": 900,
+      "max_response_ms": 5600,
+      "key_lifetime_ms": 86400000,
+      "auth_fee_minor": 2
     },
     {
       "id": "charlie",
       "acquirer_region": "EEA",
       "acquirer_country": "DE",
-      "currencies": ["EUR", "GBP"],
-      "markets": ["EEA", "UK"],
+      "currencies": [
+        "EUR",
+        "GBP"
+      ],
+      "markets": [
+        "EEA",
+        "UK"
+      ],
       "three_ds": true,
       "cost_bps": 64,
       "fixed_fee_minor": 8,
       "attempt_fee_minor": 4,
-      "lat_p99_ms": 1150
+      "lat_p99_ms": 1150,
+      "max_response_ms": 7000,
+      "key_lifetime_ms": 86400000,
+      "auth_fee_minor": 2
     },
     {
       "id": "delta",
       "acquirer_region": "EEA",
       "acquirer_country": "NL",
-      "currencies": ["EUR", "USD"],
-      "markets": ["EEA", "UK", "US", "APAC"],
+      "currencies": [
+        "EUR",
+        "USD"
+      ],
+      "markets": [
+        "EEA",
+        "UK",
+        "US",
+        "APAC"
+      ],
       "three_ds": true,
       "cost_bps": 110,
       "fixed_fee_minor": 12,
       "attempt_fee_minor": 7,
-      "lat_p99_ms": 520
+      "lat_p99_ms": 520,
+      "max_response_ms": 3400,
+      "key_lifetime_ms": 86400000,
+      "auth_fee_minor": 2
     },
     {
       "id": "echo",
       "acquirer_region": "US",
       "acquirer_country": "US",
-      "currencies": ["USD"],
-      "markets": ["US", "EEA", "APAC"],
+      "currencies": [
+        "USD"
+      ],
+      "markets": [
+        "US",
+        "EEA",
+        "APAC"
+      ],
       "three_ds": false,
       "cost_bps": 86,
       "fixed_fee_minor": 9,
       "attempt_fee_minor": 5,
-      "lat_p99_ms": 760
+      "lat_p99_ms": 760,
+      "max_response_ms": 4800,
+      "key_lifetime_ms": 86400000,
+      "auth_fee_minor": 0
     },
     {
       "id": "foxtrot",
       "acquirer_region": "EEA",
       "acquirer_country": "ES",
-      "currencies": ["EUR", "USD"],
-      "markets": ["EEA", "US", "LATAM", "APAC"],
+      "currencies": [
+        "EUR",
+        "USD"
+      ],
+      "markets": [
+        "EEA",
+        "US",
+        "LATAM",
+        "APAC"
+      ],
       "three_ds": true,
       "cost_bps": 58,
       "fixed_fee_minor": 25,
       "attempt_fee_minor": 9,
-      "lat_p99_ms": 1750
+      "lat_p99_ms": 1750,
+      "max_response_ms": 10500,
+      "key_lifetime_ms": 86400000,
+      "auth_fee_minor": 2
     }
-  ]
+  ],
+  "contract_facts_note": "max_response_ms = M in ADR-0009 R66: after M a conforming processor has a final, queryable state for every request it received, so M bounds the probe loop and retires an ambiguous timeout. Values are clamp(10 x the declared latency p95, 3000, 15000) -- the rule spikes/0010-idempotency/protocol.py derived M with (contract_max_response_ms), carried here as a catalog fact so the protocol and the fact base agree instead of the fixture inventing a second rule. The 3 s floor stops a fast processor being voided while still alive; the 15 s ceiling keeps M inside ADR-0009's route-class resolution windows (oneoff_cnp 30 s). key_lifetime_ms >= M (R66): the persisted idempotency key stays queryable for the whole retry horizon and past it in the ledger, which ADR-0009 section 2 makes a #13 concern (the ledger table in the journal file); 24 h is the horizon the fixtures use. auth_fee_minor is the 3DS server's per-authentication-session fee in minor units, charged by path (ADR-0010 R75): 2 for the five 3DS-capable processors -- the value spikes/0011-sca-friction measured with -- and 0 for echo, which has no 3DS capability and can never incur one. In production all three are onboarding-recorded contract facts, not derived ones."
 }

@@ -23,8 +23,8 @@
     "counter_unavailable": "deny"
   },
   "policy": {
-    "catalog_version": "acquirer-catalog-2026.09.1",
-    "catalog_hash": "c8351da87a9496e835229849344d2da2195354939ea1f59f193c83e2b42a2b01",
+    "catalog_version": "acquirer-catalog-2026.09.2",
+    "catalog_hash": "78b918123635684039f83d662520765634cef59321f1d141dd2b45087358c589",
     "processor_ids": ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"],
     "acquirer_regions": ["EEA", "UK", "US", "LATAM", "APAC"]
   },
