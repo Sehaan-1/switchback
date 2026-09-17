@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0.0",
+  "id": "sca-friction-v1",
+  "title": "SCA friction: a fleet whose 3DS quality is decorrelated from its authorization quality",
+  "description": "The world #11's decomposition has to be right in, and the one a 3DS term is wrong in. Two things are deliberate. (1) 3DS quality is DECORRELATED from auth quality: delta is the auth-strongest acquirer (base 0.935) with the second-worst frictionless rate (0.62) and the second-worst challenge abandonment (0.28), while charlie is auth-weak (0.842) and 3DS-strong (0.88 frictionless, 0.19 abandonment). In a fleet where 3DS quality is a proxy for auth quality (spikes/0003-0004's 'correlated' world) a term that confuses them still ranks correctly; here it does not. (2) The funnel is heterogeneous by merchant category, because the ticket says the 10-30% dropout 'varies by merchant vertical': travel and gaming challenge more (mcc multiplier 0.90/0.85 on the frictionless rate, as the grammar allows) and their challenges are abandoned more often. The second effect is a SPIKE-LOCAL model extension: the scenario grammar can express per-category CHALLENGE rates (frictionless_multiplier) but not per-category ABANDONMENT, so the abandonment multipliers live in sca_friction.py as declared constants and are flagged as a missing scenario capability in ADR-0010's payload for #17. Everything else is inherited from baseline-steady-v1 and hashes with it: same fleet, same economics (via the catalog hash), same context mix, same seed.",
+  "extends": "baseline-steady-v1",
+  "clock": {
+    "start": "2026-09-01T00:00:00Z",
+    "duration_s": 86400,
+    "resolution_ms": 1
+  },
+  "fleet": {
+    "acquirers": {
+      "alpha": {
+        "three_ds": {
+          "frictionless_rate": 0.9,
+          "challenge_abandon_rate": 0.16,
+          "bin_class_multiplier": {
+            "premium_credit": 1.06,
+            "corporate": 1.08,
+            "prepaid": 0.88
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.05,
+            "travel": 0.9,
+            "gaming": 0.85,
+            "marketplace": 0.95
+          },
+          "liability_shift_uplift": 1.055
+        }
+      },
+      "bravo": {
+        "three_ds": {
+          "frictionless_rate": 0.93,
+          "challenge_abandon_rate": 0.12,
+          "bin_class_multiplier": {
+            "premium_credit": 1.05,
+            "corporate": 1.06,
+            "prepaid": 0.9
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.03,
+            "travel": 0.88,
+            "gaming": 0.84,
+            "marketplace": 0.94
+          },
+          "liability_shift_uplift": 1.07
+        }
+      },
+      "charlie": {
+        "three_ds": {
+          "frictionless_rate": 0.88,
+          "challenge_abandon_rate": 0.19,
+          "bin_class_multiplier": {
+            "premium_credit": 1.04,
+            "corporate": 1.06,
+            "prepaid": 0.89
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.02,
+            "travel": 0.89,
+            "gaming": 0.86,
+            "marketplace": 0.95
+          },
+          "liability_shift_uplift": 1.045
+        }
+      },
+      "delta": {
+        "three_ds": {
+          "frictionless_rate": 0.62,
+          "challenge_abandon_rate": 0.28,
+          "bin_class_multiplier": {
+            "premium_credit": 1.06,
+            "corporate": 1.09,
+            "prepaid": 0.87
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.05,
+            "travel": 0.91,
+            "gaming": 0.85,
+            "marketplace": 0.96
+          },
+          "liability_shift_uplift": 1.02
+        }
+      },
+      "echo": {
+        "three_ds": {
+          "frictionless_rate": 0.85,
+          "challenge_abandon_rate": 0.22,
+          "bin_class_multiplier": {
+            "premium_credit": 1.05,
+            "corporate": 1.07,
+            "prepaid": 0.87
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.05,
+            "travel": 0.89,
+            "gaming": 0.86,
+            "marketplace": 0.95
+          },
+          "liability_shift_uplift": 1.055
+        }
+      },
+      "foxtrot": {
+        "three_ds": {
+          "frictionless_rate": 0.7,
+          "challenge_abandon_rate": 0.33,
+          "bin_class_multiplier": {
+            "premium_credit": 1.06,
+            "corporate": 1.1,
+            "prepaid": 0.88
+          },
+          "merchant_category_multiplier": {
+            "digital_goods": 1.05,
+            "travel": 0.9,
+            "gaming": 0.85,
+            "marketplace": 0.95
+          },
+          "liability_shift_uplift": 1.03
+        }
+      }
+    }
+  },
+  "recording": {
+    "mode": "all_arms",
+    "trace_path": "data/traces/sca-friction-v1"
+  }
+}

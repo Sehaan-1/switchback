@@ -41,6 +41,9 @@ Decided so far:
 - [Idempotency and double-charge prevention: the lease, the idempotent resend, and
   confirmed-terminal fallback](docs/decisions/0009-idempotency-double-charge.md)
   ([#10](https://github.com/Sehaan-1/switchback/issues/10))
+- [3DS friction: the authentication record, the fee the ledger charges, and MIT's scope]
+  (docs/decisions/0010-3ds-friction.md)
+  ([#11](https://github.com/Sehaan-1/switchback/issues/11))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
@@ -61,8 +64,9 @@ evidence behind ADR-0007,
 [`spikes/0009-censored-exploration/`](spikes/0009-censored-exploration/) for the
 censored-feedback and exploration evidence behind ADR-0008, and
 [`spikes/0010-idempotency/`](spikes/0010-idempotency/) for the idempotency and
-double-charge prevention evidence behind ADR-0009 — each regenerates its own
-committed results.
+double-charge prevention evidence behind ADR-0009, and
+[`spikes/0011-sca-friction/`](spikes/0011-sca-friction/) for the 3DS/SCA logging and
+scope evidence behind ADR-0010 — each regenerates its own committed results.
 
 Two directories are artifacts rather than prose, and both are gated by a dependency-free
 checker that runs in CI and refuses a document that should not exist:
