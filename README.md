@@ -44,6 +44,9 @@ Decided so far:
 - [3DS friction: the authentication record, the fee the ledger charges, and MIT's scope]
   (docs/decisions/0010-3ds-friction.md)
   ([#11](https://github.com/Sehaan-1/switchback/issues/11))
+- [Engine module layout and interface contracts: one `internal/` tree, the acquirer seam,
+  the fold-only write path](docs/decisions/0011-module-layout.md)
+  ([#12](https://github.com/Sehaan-1/switchback/issues/12))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
@@ -51,6 +54,11 @@ spikes/             small, reproducible probes that back a decision (not impleme
 constraints/        the ConstraintSet schema, the rule catalog, the examples and the gate over them
 simulator/          the scenario schema, the worked scenarios, the golden files and the gate over them
 ```
+
+The engine itself is not code yet: the module map it will be built against — the package
+tree, the `acquirer.Client` seam, the `RoutingRequest`/`RoutingDecision` contracts, the
+data-flow and the Python boundary — is
+[ADR-0011](docs/decisions/0011-module-layout.md).
 
 Implementation (engine, simulator, dashboard, benchmarks) starts after the map is complete.
 Evidence for a decision lives next to it: see
