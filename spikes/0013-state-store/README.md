@@ -120,8 +120,8 @@ a band is wider than the claim.
   37 min), and detects a one-column edit at exactly the row where it happened.
 - **`W9` — exactly-once learning is a partial unique index, and the policy inside `OR IGNORE`
   has to be written down.** `(seq, attempt) WHERE kind = OUTCOME` costs +7.6 B/row exactly and
-  3–25% of write throughput depending on the run and cache state (13.6% in the committed full
-  run; 25.1 / 3.0 / 15.6 / 11.8% in four other passes) — anywhere else would mean a read before
+  1–25% of write throughput depending on the run and cache state (13.6% in the committed full
+  run; 25.1 / 15.6 / 11.8 / 3.0 / 1.2% in five other passes) — anywhere else would mean a read before
   every write. It survives 148,398 redeliveries in four shapes, including 200 with a
   *conflicting* outcome: 0 rows added, 5.84 µs per ignored insert, and a bit-identical fold
   digest. First write wins, a correction is a distinct op kind, and the dropped-conflict count
