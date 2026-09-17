@@ -53,3 +53,4 @@ House rules:
 | [0007](0007-drift-detection.md) | Drift detection: ADWIN at processor level, tiered decay, and onboarding exploration floor | [#8](https://github.com/Sehaan-1/switchback/issues/8) | Accepted |
 | [0008](0008-censored-exploration.md) | Censored data and exploration: bandit feedback scope, no standing forced exploration, DECISION_LOG v1, delayed outcomes | [#9](https://github.com/Sehaan-1/switchback/issues/9) | Accepted |
 | [0009](0009-idempotency-double-charge.md) | Idempotency and double-charge prevention: the lease, the idempotent resend, and confirmed-terminal fallback | [#10](https://github.com/Sehaan-1/switchback/issues/10) | Accepted |
+| [0010](0010-3ds-friction.md) | 3DS friction: the authentication record, path-accurate fee incidence, the exemption budget, and MIT scope | [#11](https://github.com/Sehaan-1/switchback/issues/11) | Accepted |
