@@ -1,6 +1,7 @@
 {
   "baseline-steady-v1": "sha256:16661ded41ddf86b195eacecfcc44bf263a93efe753d71cc73dc56614d76f732",
   "black-friday-degraded-v1": "sha256:7e939d9d908a4808c3c4dd15e91491b58441f51169685fbe1c780108612bd1d7",
+  "idempotency-stress-v1": "sha256:14273698a329904f55169b50b737efafc81ae43e5fafe1869c2c716c2ffc1456",
   "outage-recovery-v1": "sha256:7ccf8382441437099814c95c1cd9726e2850875260fabcdb15c6dbf7bb8fb711",
   "replay-trace-v1": "sha256:681e449349a7e396f0e3aa98fbe3f291f9b8b6a28ed19dab57f709681f67a0a5"
 }
