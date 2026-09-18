@@ -50,6 +50,9 @@ Decided so far:
 - [State store: two SQLite files split by durability, the trace as the fold's log, and
   snapshots as its checkpoints](docs/decisions/0012-state-store.md)
   ([#13](https://github.com/Sehaan-1/switchback/issues/13))
+- [Safe policy rollout: the stage ladder, the gate set, content-addressed policy
+  identity, and the pointer-swap kill-switch](docs/decisions/0013-safe-policy-rollout.md)
+  ([#14](https://github.com/Sehaan-1/switchback/issues/14))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
@@ -79,7 +82,10 @@ double-charge prevention evidence behind ADR-0009, and
 [`spikes/0011-sca-friction/`](spikes/0011-sca-friction/) for the 3DS/SCA logging and
 scope evidence behind ADR-0010, and
 [`spikes/0013-state-store/`](spikes/0013-state-store/) for the state-store evidence behind
-ADR-0012 — each regenerates its own committed results.
+ADR-0012, and
+[`spikes/0014-safe-rollout/`](spikes/0014-safe-rollout/) for the rollout-protocol,
+gate-calibration, and policy-identity evidence behind
+ADR-0013 — each regenerates its own committed results.
 
 Two directories are artifacts rather than prose, and both are gated by a dependency-free
 checker that runs in CI and refuses a document that should not exist:
