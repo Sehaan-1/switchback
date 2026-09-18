@@ -246,9 +246,12 @@ protocol, suppression OFF           2        0     0        31,894         -    
 
   -> the improvement alarm is Tier-2 and lands INSIDE the arming window (the
      deploy and the silent recovery overlap): suppression delays the R58 reset
-     that re-feeds foxtrot, and the delay is paid in margin. The re-check at
-     expiry fires it (the shift is real), so the alarm is late, not lost -- but
-     the arming window must stay SHORT (256 settled, not thousands).
+     that re-feeds foxtrot by 4,485 transactions, and the re-check at expiry
+     fires it (the shift is real) -- the alarm is late, not lost. The DELAY is
+     the measured cost; the post-deploy margin gap between ON and OFF here
+     (5.3 c/1k) is inside single-run noise, so one run prices the
+     delay, not the damage -- and the delay scales with the arming window, which
+     is why it must stay SHORT (256 settled, not thousands).
 
   outage during rollout (outage-recovery-v1, no-op canary 25% from seq 10,000;
   foxtrot connection_refused at t=345,600s, gate armed at Y=1869):

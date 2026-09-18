@@ -1221,12 +1221,18 @@ def sec_s4(n):
     print()
     print(table(["starved-improvement rollout", "applied", "held", "refired",
                  "first applied", "first refire", "post-deploy c/1k"], rows))
-    print("""
+    al_on = [a for a in m_sup.alarm_log if not a[6]]
+    he_on = [e for e in m_sup.events if e[1] == "REFIRE"]
+    dly = he_on[0][0] - al_on[0][0] if he_on and al_on else 0
+    print(f"""
   -> the improvement alarm is Tier-2 and lands INSIDE the arming window (the
      deploy and the silent recovery overlap): suppression delays the R58 reset
-     that re-feeds foxtrot, and the delay is paid in margin. The re-check at
-     expiry fires it (the shift is real), so the alarm is late, not lost -- but
-     the arming window must stay SHORT (256 settled, not thousands).""")
+     that re-feeds foxtrot by {dly:,} transactions, and the re-check at expiry
+     fires it (the shift is real) -- the alarm is late, not lost. The DELAY is
+     the measured cost; the post-deploy margin gap between ON and OFF here
+     ({fmt(m_sup.margin_per_1k(cut, n) - m_pl.margin_per_1k(cut, n), 1)} c/1k) is inside single-run noise, so one run prices the
+     delay, not the damage -- and the delay scales with the arming window, which
+     is why it must stay SHORT (256 settled, not thousands).""")
     st4, _ = block_sigma((m25, m25b := steady_run("noop", n, share=2_500,
                                                   asg_seed=20_260_920)), 4)
     y25 = 3.0 * st4[1]
