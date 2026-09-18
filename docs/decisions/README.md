@@ -57,3 +57,4 @@ House rules:
 | [0011](0011-module-layout.md) | Engine module layout and interface contracts: one `internal/` tree, the acquirer seam, the fold-only write path | [#12](https://github.com/Sehaan-1/switchback/issues/12) | Accepted |
 | [0012](0012-state-store.md) | State store: two SQLite files split by durability, the trace as the fold's log, snapshots as its checkpoints | [#13](https://github.com/Sehaan-1/switchback/issues/13) | Accepted |
 | [0013](0013-safe-policy-rollout.md) | Safe policy rollout: the stage ladder, the gate set, content-addressed policy identity, and the pointer-swap kill-switch | [#14](https://github.com/Sehaan-1/switchback/issues/14) | Accepted |
+| [0014](0014-off-policy-evaluation.md) | Off-policy evaluation: clipped IPS with exact-recomputed propensities, the shift query interface, and the replay-validation gate | [#15](https://github.com/Sehaan-1/switchback/issues/15) | Accepted |
