@@ -56,3 +56,4 @@ House rules:
 | [0010](0010-3ds-friction.md) | 3DS friction: the authentication record, path-accurate fee incidence, the exemption budget, and MIT scope | [#11](https://github.com/Sehaan-1/switchback/issues/11) | Accepted |
 | [0011](0011-module-layout.md) | Engine module layout and interface contracts: one `internal/` tree, the acquirer seam, the fold-only write path | [#12](https://github.com/Sehaan-1/switchback/issues/12) | Accepted |
 | [0012](0012-state-store.md) | State store: two SQLite files split by durability, the trace as the fold's log, snapshots as its checkpoints | [#13](https://github.com/Sehaan-1/switchback/issues/13) | Accepted |
+| [0013](0013-safe-policy-rollout.md) | Safe policy rollout: the stage ladder, the gate set, content-addressed policy identity, and the pointer-swap kill-switch | [#14](https://github.com/Sehaan-1/switchback/issues/14) | Accepted |
