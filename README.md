@@ -53,6 +53,13 @@ Decided so far:
 - [Safe policy rollout: the stage ladder, the gate set, content-addressed policy
   identity, and the pointer-swap kill-switch](docs/decisions/0013-safe-policy-rollout.md)
   ([#14](https://github.com/Sehaan-1/switchback/issues/14))
+- [Off-policy evaluation: clipped IPS with exact-recomputed propensities, the shift
+  query interface, and the replay-validation gate](docs/decisions/0014-off-policy-evaluation.md)
+  ([#15](https://github.com/Sehaan-1/switchback/issues/15))
+- [Dashboard design: the six panels, the analysis-API read path (sealed aggregates +
+  bounded tail, 60-s polling, no WebSocket), the grid-preview + async-exact counterfactual,
+  and the React/Recharts/TanStack Query stack](docs/decisions/0015-dashboard.md)
+  ([#16](https://github.com/Sehaan-1/switchback/issues/16))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
