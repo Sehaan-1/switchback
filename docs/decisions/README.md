@@ -58,3 +58,4 @@ House rules:
 | [0012](0012-state-store.md) | State store: two SQLite files split by durability, the trace as the fold's log, snapshots as its checkpoints | [#13](https://github.com/Sehaan-1/switchback/issues/13) | Accepted |
 | [0013](0013-safe-policy-rollout.md) | Safe policy rollout: the stage ladder, the gate set, content-addressed policy identity, and the pointer-swap kill-switch | [#14](https://github.com/Sehaan-1/switchback/issues/14) | Accepted |
 | [0014](0014-off-policy-evaluation.md) | Off-policy evaluation: clipped IPS with exact-recomputed propensities, the shift query interface, and the replay-validation gate | [#15](https://github.com/Sehaan-1/switchback/issues/15) | Accepted |
+| [0015](0015-dashboard.md) | Dashboard design: six panels, the analysis-API read path, grid-preview + async-exact counterfactual UX, and the React stack | [#16](https://github.com/Sehaan-1/switchback/issues/16) | Accepted |
