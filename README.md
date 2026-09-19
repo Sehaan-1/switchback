@@ -60,12 +60,17 @@ Decided so far:
   bounded tail, 60-s polling, no WebSocket), the grid-preview + async-exact counterfactual,
   and the React/Recharts/TanStack Query stack](docs/decisions/0015-dashboard.md)
   ([#16](https://github.com/Sehaan-1/switchback/issues/16))
+- [Benchmarks: the four headline metrics defined and measured, the cost-only baseline
+  reported as a named static-router panel, one-command deterministic regeneration,
+  and hard anti-cherry-picking gates](docs/decisions/0016-benchmarks.md)
+  ([#17](https://github.com/Sehaan-1/switchback/issues/17))
 
 ```
 docs/decisions/     ADRs — one per resolved decision ticket
 spikes/             small, reproducible probes that back a decision (not implementation)
 constraints/        the ConstraintSet schema, the rule catalog, the examples and the gate over them
 simulator/          the scenario schema, the worked scenarios, the golden files and the gate over them
+scripts/            one-command regeneration drivers — BENCHMARKS.md and the gates over it
 ```
 
 The engine itself is not code yet: the module map it will be built against — the package
